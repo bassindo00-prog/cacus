@@ -95,43 +95,66 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
       const width = Math.round(rect.width);
       const height = Math.round(rect.height);
 
-      // Create offscreen recording canvas
+      // Create offscreen recording canvas with 1.5x resolution for speed & HD quality
+      const scaleFactor = 1.5;
       const offscreenCanvas = document.createElement('canvas');
-      offscreenCanvas.width = width * 2; // 2x HD resolution
-      offscreenCanvas.height = height * 2;
+      offscreenCanvas.width = Math.round(width * scaleFactor);
+      offscreenCanvas.height = Math.round(height * scaleFactor);
       const ctx = offscreenCanvas.getContext('2d');
-      ctx.scale(2, 2);
 
-      // Capture canvas stream at 30 FPS
-      const videoStream = offscreenCanvas.captureStream(30);
+      // Warm up fonts & images once so frames are NEVER blank
+      try {
+        const warmup = await toCanvas(node, { pixelRatio: scaleFactor, cacheBust: true });
+        ctx.drawImage(warmup, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+      } catch (e) {
+        console.warn('Warmup frame warning:', e);
+      }
+
+      // Capture canvas stream at 24 FPS (cinematic & fast)
+      const videoStream = offscreenCanvas.captureStream(24);
 
       // Audio stream capture
       let combinedStream = videoStream;
       try {
-        if (audioRef && audioRef.current && audioRef.current.captureStream) {
-          const audioStream = audioRef.current.captureStream();
-          combinedStream = new MediaStream([
-            ...videoStream.getVideoTracks(),
-            ...audioStream.getAudioTracks()
-          ]);
+        if (audioRef && audioRef.current) {
+          const audio = audioRef.current;
+          audio.currentTime = 0;
+          if (audio.captureStream) {
+            const audioStream = audio.captureStream();
+            combinedStream = new MediaStream([
+              ...videoStream.getVideoTracks(),
+              ...audioStream.getAudioTracks()
+            ]);
+          } else if (audio.mozCaptureStream) {
+            const audioStream = audio.mozCaptureStream();
+            combinedStream = new MediaStream([
+              ...videoStream.getVideoTracks(),
+              ...audioStream.getAudioTracks()
+            ]);
+          }
         }
       } catch (audioErr) {
         console.warn('Audio stream capture fallback:', audioErr);
       }
 
-      // Reset audio to start and play
-      if (audioRef && audioRef.current) {
-        audioRef.current.currentTime = 0;
-      }
+      // Start audio playback
       if (onTogglePlay) onTogglePlay(true);
 
-      // Setup MediaRecorder
-      let mimeType = 'video/webm;codecs=vp9';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'video/webm';
-      }
+      // Determine iOS / Android / Desktop compatible video MIME type
+      const mimeTypes = [
+        'video/mp4;codecs=h264,aac',
+        'video/mp4',
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm'
+      ];
+      let selectedMime = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
+      const fileExt = selectedMime.includes('mp4') ? 'mp4' : 'webm';
 
-      const recorder = new MediaRecorder(combinedStream, { mimeType });
+      const recorder = new MediaRecorder(combinedStream, { 
+        mimeType: selectedMime,
+        videoBitsPerSecond: 2500000 // 2.5 Mbps crisp video quality
+      });
       mediaRecorderRef.current = recorder;
 
       recorder.ondataavailable = (event) => {
@@ -141,11 +164,11 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
       };
 
       recorder.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, { type: mimeType });
+        const blob = new Blob(recordedChunksRef.current, { type: selectedMime });
         const videoUrl = URL.createObjectURL(blob);
 
         const link = document.createElement('a');
-        link.download = `${templateName.toLowerCase().replace(/\s+/g, '_')}_visualizer.webm`;
+        link.download = `${templateName.toLowerCase().replace(/\s+/g, '_')}_video.${fileExt}`;
         link.href = videoUrl;
         link.click();
 
@@ -153,35 +176,51 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
         setRecordProgress(100);
 
         confetti({
-          particleCount: 120,
+          particleCount: 100,
           spread: 80,
           origin: { y: 0.6 }
         });
       };
 
-      recorder.start(100); // 100ms timeslice
+      recorder.start(100);
 
-      // Frame rendering loop
+      // Sequential Frame Rendering Loop (Guarantees fast, non-blank frames)
       const startTime = Date.now();
       const totalDurationMs = targetSeconds * 1000;
+      let isRecordingActive = true;
 
-      const renderInterval = setInterval(async () => {
+      const recordLoop = async () => {
+        if (!isRecordingActive) return;
+
         const elapsed = Date.now() - startTime;
-        const currentProgress = Math.min(100, Math.round((elapsed / totalDurationMs) * 100));
+        const currentProgress = Math.min(99, Math.round((elapsed / totalDurationMs) * 100));
         setRecordProgress(currentProgress);
 
-        try {
-          // Render current DOM node frame onto offscreen canvas
-          const frameCanvas = await toCanvas(node, { pixelRatio: 2, cacheBust: false });
-          ctx.clearRect(0, 0, width, height);
-          ctx.drawImage(frameCanvas, 0, 0, width, height);
-        } catch (e) {}
-
         if (elapsed >= totalDurationMs) {
-          clearInterval(renderInterval);
+          isRecordingActive = false;
+          setRecordProgress(100);
           recorder.stop();
+          return;
         }
-      }, 1000 / 30); // 30 FPS render loop
+
+        try {
+          // Render frame synchronously & draw to offscreen canvas
+          const frameCanvas = await toCanvas(node, { pixelRatio: scaleFactor, cacheBust: false });
+          if (isRecordingActive) {
+            ctx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+            ctx.drawImage(frameCanvas, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+          }
+        } catch (e) {
+          console.warn('Frame render skipped:', e);
+        }
+
+        // Schedule next frame immediately after current frame finishes
+        if (isRecordingActive) {
+          setTimeout(recordLoop, 1000 / 24); // 24 FPS target
+        }
+      };
+
+      recordLoop();
 
     } catch (err) {
       console.error('Video export error:', err);
