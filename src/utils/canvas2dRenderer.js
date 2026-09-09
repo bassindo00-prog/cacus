@@ -137,6 +137,16 @@ function drawPlayIcon(ctx, x, y, size, color = '#ffffff') {
   ctx.restore();
 }
 
+function drawCirclePlayButton(ctx, x, y, size, circleBg = '#ffffff', iconColor = '#000000') {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+  ctx.fillStyle = circleBg;
+  ctx.fill();
+  drawPlayIcon(ctx, x + 2, y, size * 0.45, iconColor);
+  ctx.restore();
+}
+
 function drawSkipBackIcon(ctx, x, y, size, color = '#ffffff') {
   ctx.save();
   ctx.fillStyle = color;
@@ -198,6 +208,45 @@ function drawMoreHorizontalIcon(ctx, x, y, size, color = '#71717a') {
   ctx.restore();
 }
 
+function drawPlusIcon(ctx, x, y, size, color = '#ffffff') {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x - size * 0.4, y); ctx.lineTo(x + size * 0.4, y);
+  ctx.moveTo(x, y - size * 0.4); ctx.lineTo(x, y + size * 0.4);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawBookmarkIcon(ctx, x, y, size, color = '#94a3b8') {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x - size * 0.35, y - size * 0.45);
+  ctx.lineTo(x + size * 0.35, y - size * 0.45);
+  ctx.lineTo(x + size * 0.35, y + size * 0.45);
+  ctx.lineTo(x, y + size * 0.2);
+  ctx.lineTo(x - size * 0.35, y + size * 0.45);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawHeartIcon(ctx, x, y, size, color = '#ffffff') {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(x - size * 0.2, y - size * 0.1, size * 0.25, Math.PI, 0);
+  ctx.arc(x + size * 0.2, y - size * 0.1, size * 0.25, Math.PI, 0);
+  ctx.lineTo(x, y + size * 0.45);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+}
+
 export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, width, height, assets) {
   ctx.clearRect(0, 0, width, height);
 
@@ -215,10 +264,655 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
   const artist = data.artist ?? '';
   const totalSecs = 210; // 3:30
 
-  // -----------------------------------------------------------------
-  // 1. TEMPLATE 14: iOS LOCKSCREEN WIDGET (Exact Match for Screenshot)
-  // -----------------------------------------------------------------
-  if (templateId === 't14_ios_lockscreen' || templateId === 't13_classic_ipod') {
+  // =================================================================
+  // TEMPLATE 1: t1_holographic_profile
+  // =================================================================
+  if (templateId === 't1_holographic_profile') {
+    const cardW = width * 0.86;
+    const cardH = height * 0.45;
+    const cardX = (width - cardW) / 2;
+    const cardY = (height - cardH) / 2;
+
+    ctx.save();
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 36);
+    ctx.fillStyle = 'rgba(12, 14, 24, 0.88)';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = glowColor;
+    ctx.stroke();
+
+    // Top Header: Plus icon, username, MoreHorizontal
+    const topY = cardY + 42;
+    drawPlusIcon(ctx, cardX + 36, topY, 24, '#ffffff');
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${Math.round(width * 0.042)}px sans-serif`;
+    ctx.fillText(data.username || 'galib______786', width / 2, topY + 6);
+    drawMoreHorizontalIcon(ctx, cardX + cardW - 36, topY, 24, '#ffffff');
+
+    // Avatar Circle Photo & Artist
+    const avtR = cardH * 0.16;
+    const avtX = cardX + 48 + avtR;
+    const avtY = cardY + cardH * 0.48;
+
+    ctx.save();
+    ctx.beginPath(); ctx.arc(avtX, avtY, avtR, 0, Math.PI * 2);
+    ctx.strokeStyle = data.accentColor || '#ec4899';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    if (assets.coverImg) {
+      drawClippedImage(ctx, assets.coverImg, avtX - avtR, avtY - avtR, avtR * 2, avtR * 2, avtR);
+    }
+    ctx.restore();
+
+    // Artist name & Followers
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
+    ctx.fillText(artist || songTitle || 'Artist Name', avtX + avtR + 24, avtY - 8);
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = `500 ${Math.round(width * 0.035)}px sans-serif`;
+    ctx.fillText(`${data.followers || '66'} followers`, avtX + avtR + 24, avtY + 28);
+
+    ctx.restore();
+    return;
+  }
+
+  // =================================================================
+  // TEMPLATE 2: t2_earbud_hologram
+  // =================================================================
+  if (templateId === 't2_earbud_hologram') {
+    const cardW = width * 0.86;
+    const cardH = height * 0.42;
+    const cardX = (width - cardW) / 2;
+    const cardY = (height - cardH) / 2;
+
+    ctx.save();
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 36);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = glowColor;
+    ctx.stroke();
+
+    const artSize = cardH * 0.44;
+    const artX = cardX + 30;
+    const artY = cardY + 36;
+    if (assets.coverImg) {
+      drawClippedImage(ctx, assets.coverImg, artX, artY, artSize, artSize, 20);
+    }
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
+    ctx.fillText(songTitle, artX + artSize + 24, artY + artSize * 0.35);
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = `500 ${Math.round(width * 0.036)}px sans-serif`;
+    ctx.fillText(artist, artX + artSize + 24, artY + artSize * 0.7);
+
+    const ctrlY = artY + artSize + 36;
+    drawSkipBackIcon(ctx, artX + artSize + 24, ctrlY, 20, '#ffffff');
+    drawPlayIcon(ctx, artX + artSize + 74, ctrlY, 24, '#ffffff');
+    drawSkipForwardIcon(ctx, artX + artSize + 124, ctrlY, 20, '#ffffff');
+
+    const barX = cardX + 30;
+    const barY = cardY + cardH - 50;
+    const barW = cardW - 60;
+    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, glowColor, 'rgba(255,255,255,0.2)');
+    drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 28, Math.round(width * 0.028), '#94a3b8');
+
+    ctx.restore();
+    return;
+  }
+
+  // =================================================================
+  // TEMPLATE 3: t3_airpods_blue
+  // =================================================================
+  if (templateId === 't3_airpods_blue') {
+    const cardW = width * 0.86;
+    const cardH = height * 0.44;
+    const cardX = (width - cardW) / 2;
+    const cardY = (height - cardH) / 2;
+
+    ctx.save();
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 36);
+    ctx.fillStyle = 'rgba(2, 6, 23, 0.92)';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = data.glowColor || '#2563eb';
+    ctx.stroke();
+
+    const artSize = cardH * 0.42;
+    const artX = cardX + 30;
+    const artY = cardY + 32;
+    if (assets.coverImg) {
+      drawClippedImage(ctx, assets.coverImg, artX, artY, artSize, artSize, 20);
+    }
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
+    ctx.fillText(songTitle, artX + artSize + 24, artY + artSize * 0.4);
+
+    ctx.fillStyle = '#93c5fd';
+    ctx.font = `500 ${Math.round(width * 0.036)}px sans-serif`;
+    ctx.fillText(artist, artX + artSize + 24, artY + artSize * 0.78);
+
+    const barX = cardX + 30;
+    const barY = cardY + cardH * 0.62;
+    const barW = cardW - 60;
+    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#ffffff', 'rgba(255,255,255,0.2)');
+    drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 28, Math.round(width * 0.028), '#93c5fd');
+
+    const botY = cardY + cardH - 36;
+    drawSkipBackIcon(ctx, cardX + 44, botY, 22, '#ffffff');
+    drawPlayIcon(ctx, cardX + 100, botY, 26, '#ffffff');
+    drawSkipForwardIcon(ctx, cardX + 156, botY, 22, '#ffffff');
+
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#1db954';
+    ctx.font = `800 ${Math.round(width * 0.035)}px sans-serif`;
+    ctx.fillText(data.badgeText || 'Spotify', cardX + cardW - 30, botY + 8);
+
+    ctx.restore();
+    return;
+  }
+
+  // =================================================================
+  // TEMPLATE 4: t4_airpods_orange (Amber Glow Airpods)
+  // =================================================================
+  if (templateId === 't4_airpods_orange') {
+    const cardW = width * 0.86;
+    const cardH = height * 0.48;
+    const cardX = (width - cardW) / 2;
+    const cardY = (height - cardH) / 2;
+
+    ctx.save();
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 40);
+    ctx.fillStyle = 'rgba(24, 9, 2, 0.88)';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = data.glowColor || '#f97316';
+    ctx.stroke();
+
+    // 1. Top Caption
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffedd5';
+    ctx.font = `600 ${Math.round(width * 0.038)}px sans-serif`;
+    ctx.fillText(data.caption || 'La Misión para la racha, porque es un temazo.', cardX + 30, cardY + 48);
+
+    // 2. Cover Artwork Image (left) + Song Title & Artist (right)
+    const artSize = cardH * 0.38;
+    const artX = cardX + 30;
+    const artY = cardY + 80;
+
+    if (assets.coverImg) {
+      drawClippedImage(ctx, assets.coverImg, artX, artY, artSize, artSize, 20);
+    } else {
+      ctx.fillStyle = '#1e293b';
+      drawRoundedRect(ctx, artX, artY, artSize, artSize, 20); ctx.fill();
+    }
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
+    ctx.fillText(songTitle, artX + artSize + 24, artY + artSize * 0.4);
+
+    ctx.fillStyle = '#fdba74';
+    ctx.font = `500 ${Math.round(width * 0.036)}px sans-serif`;
+    ctx.fillText(artist, artX + artSize + 24, artY + artSize * 0.78);
+
+    // 3. Seekbar Timeline & Timecode
+    const barX = cardX + 30;
+    const barY = artY + artSize + 48;
+    const barW = cardW - 60;
+    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#ffffff', 'rgba(255,255,255,0.2)');
+    drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 28, Math.round(width * 0.028), '#fdba74');
+
+    // 4. Bottom Controls (|<<  |>  >>|) + Spotify Badge
+    const botY = cardY + cardH - 42;
+    drawSkipBackIcon(ctx, cardX + 44, botY, 22, '#ffffff');
+    drawPlayIcon(ctx, cardX + 100, botY, 26, '#ffffff');
+    drawSkipForwardIcon(ctx, cardX + 156, botY, 22, '#ffffff');
+
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#1db954';
+    ctx.font = `800 ${Math.round(width * 0.036)}px sans-serif`;
+    ctx.fillText(data.badgeText || 'Spotify', cardX + cardW - 30, botY + 8);
+
+    ctx.restore();
+    return;
+  }
+
+  // =================================================================
+  // TEMPLATE 5: t5_airpods_monochrome
+  // =================================================================
+  if (templateId === 't5_airpods_monochrome') {
+    const cardW = width * 0.86;
+    const cardH = height * 0.44;
+    const cardX = (width - cardW) / 2;
+    const cardY = (height - cardH) / 2;
+
+    ctx.save();
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 36);
+    ctx.fillStyle = 'rgba(10, 10, 10, 0.92)';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#ffffff';
+    ctx.stroke();
+
+    const artSize = cardH * 0.42;
+    const artX = cardX + 30;
+    const artY = cardY + 32;
+    if (assets.coverImg) {
+      drawClippedImage(ctx, assets.coverImg, artX, artY, artSize, artSize, 18, 1, true);
+    }
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
+    ctx.fillText(songTitle, artX + artSize + 24, artY + artSize * 0.4);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = `500 ${Math.round(width * 0.036)}px sans-serif`;
+    ctx.fillText(artist, artX + artSize + 24, artY + artSize * 0.78);
+
+    const barX = cardX + 30;
+    const barY = cardY + cardH * 0.62;
+    const barW = cardW - 60;
+    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#ffffff', 'rgba(255,255,255,0.2)');
+    drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 28, Math.round(width * 0.028), '#94a3b8');
+
+    const botY = cardY + cardH - 36;
+    drawSkipBackIcon(ctx, cardX + 44, botY, 22, '#ffffff');
+    drawPlayIcon(ctx, cardX + 100, botY, 26, '#ffffff');
+    drawSkipForwardIcon(ctx, cardX + 156, botY, 22, '#ffffff');
+
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${Math.round(width * 0.035)}px sans-serif`;
+    ctx.fillText(data.badgeText || 'Spotify', cardX + cardW - 30, botY + 8);
+
+    ctx.restore();
+    return;
+  }
+
+  // =================================================================
+  // TEMPLATE 6: t6_floor_mat_rug (Album Rug Streetwear)
+  // =================================================================
+  if (templateId === 't6_floor_mat_rug') {
+    const cardW = width * 0.84;
+    const cardH = height * 0.62;
+    const cardX = (width - cardW) / 2;
+    const cardY = (height - cardH) / 2;
+
+    ctx.save();
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 32);
+    ctx.fillStyle = data.rugColor || '#880808';
+    ctx.fill();
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#dc2626';
+    ctx.font = `900 ${Math.round(width * 0.09)}px Montserrat, sans-serif`;
+    ctx.fillText(data.albumHeader || 'DAMN.', cardX + 28, cardY + 70);
+
+    const artSize = cardW * 0.44;
+    const artX = (width - artSize) / 2;
+    const artY = cardY + 95;
+    if (assets.coverImg) {
+      drawClippedImage(ctx, assets.coverImg, artX, artY, artSize, artSize, 16);
+    }
+
+    const textY = artY + artSize + 44;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
+    ctx.fillText(songTitle, width / 2, textY);
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = `500 ${Math.round(width * 0.035)}px sans-serif`;
+    ctx.fillText(artist, width / 2, textY + 36);
+
+    const barX = cardX + 28;
+    const barY = textY + 70;
+    const barW = cardW - 56;
+    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#ffffff', 'rgba(255,255,255,0.3)');
+
+    const ctrlY = barY + 60;
+    drawSkipBackIcon(ctx, width / 2 - 80, ctrlY, 22, '#ffffff');
+    drawCirclePlayButton(ctx, width / 2, ctrlY, 48, '#ffffff', '#000000');
+    drawSkipForwardIcon(ctx, width / 2 + 80, ctrlY, 22, '#ffffff');
+
+    ctx.restore();
+    return;
+  }
+
+  // =================================================================
+  // TEMPLATE 7: t7_silk_glass_widget
+  // =================================================================
+  if (templateId === 't7_silk_glass_widget') {
+    const cardW = width * 0.86;
+    const cardH = height * 0.45;
+    const cardX = (width - cardW) / 2;
+    const cardY = (height - cardH) / 2;
+
+    ctx.save();
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 36);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = data.glowColor || '#06b6d4';
+    ctx.stroke();
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#e0f2fe';
+    ctx.font = `500 ${Math.round(width * 0.036)}px sans-serif`;
+    ctx.fillText(data.quoteText || 'A veces querer mucho tampoco es suficiente', cardX + 28, cardY + 44);
+
+    const artSize = cardH * 0.38;
+    const artX = cardX + 28;
+    const artY = cardY + 72;
+    if (assets.coverImg) {
+      drawClippedImage(ctx, assets.coverImg, artX, artY, artSize, artSize, 16);
+    }
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
+    ctx.fillText(songTitle, artX + artSize + 20, artY + artSize * 0.4);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = `500 ${Math.round(width * 0.035)}px sans-serif`;
+    ctx.fillText(artist, artX + artSize + 20, artY + artSize * 0.78);
+
+    drawBookmarkIcon(ctx, cardX + cardW - 36, artY + artSize * 0.5, 22, '#94a3b8');
+
+    const barX = cardX + 28;
+    const barY = artY + artSize + 48;
+    const barW = cardW - 56;
+    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#ffffff', 'rgba(255,255,255,0.2)');
+    drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 28, Math.round(width * 0.028), '#94a3b8');
+
+    const ctrlY = barY + 70;
+    const ctrlCenterX = width / 2;
+    drawSkipBackIcon(ctx, ctrlCenterX - 70, ctrlY, 22, '#ffffff');
+    drawPlayIcon(ctx, ctrlCenterX, ctrlY, 26, '#ffffff');
+    drawSkipForwardIcon(ctx, ctrlCenterX + 70, ctrlY, 22, '#ffffff');
+
+    ctx.restore();
+    return;
+  }
+
+  // =================================================================
+  // TEMPLATE 8: t8_selfie_story_overlay
+  // =================================================================
+  if (templateId === 't8_selfie_story_overlay') {
+    const barX = width * 0.08;
+    const barY = height * 0.84;
+    const barW = width * 0.84;
+
+    ctx.save();
+    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#ffffff', 'rgba(255,255,255,0.4)');
+
+    const ctrlY = barY + 60;
+    const cx = width / 2;
+    drawShuffleIcon(ctx, cx - 140, ctrlY, 22, '#ffffff');
+    drawSkipBackIcon(ctx, cx - 70, ctrlY, 24, '#ffffff');
+    drawCirclePlayButton(ctx, cx, ctrlY, 54, '#ffffff', '#000000');
+    drawSkipForwardIcon(ctx, cx + 70, ctrlY, 24, '#ffffff');
+    drawRepeatIcon(ctx, cx + 140, ctrlY, 22, '#ffffff');
+
+    ctx.restore();
+    return;
+  }
+
+  // =================================================================
+  // TEMPLATE 9: t9_glass_portrait_glow
+  // =================================================================
+  if (templateId === 't9_glass_portrait_glow') {
+    const cardW = width * 0.86;
+    const cardH = height * 0.58;
+    const cardX = (width - cardW) / 2;
+    const cardY = (height - cardH) / 2;
+
+    ctx.save();
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 36);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.stroke();
+
+    const textY = cardY + cardH * 0.58;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${Math.round(width * 0.052)}px sans-serif`;
+    ctx.fillText(songTitle, cardX + 32, textY);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = `500 ${Math.round(width * 0.038)}px sans-serif`;
+    ctx.fillText(artist, cardX + 32, textY + 40);
+
+    const barX = cardX + 32;
+    const barY = textY + 84;
+    const barW = cardW - 64;
+    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#ffffff', 'rgba(255,255,255,0.3)');
+    drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 28, Math.round(width * 0.028), '#cbd5e1');
+
+    const ctrlY = barY + 74;
+    const cx = width / 2;
+    drawHeartIcon(ctx, cardX + 50, ctrlY, 22, '#ffffff');
+    drawSkipBackIcon(ctx, cx - 70, ctrlY, 22, '#ffffff');
+    drawCirclePlayButton(ctx, cx, ctrlY, 46, '#ffffff', '#000000');
+    drawSkipForwardIcon(ctx, cx + 70, ctrlY, 22, '#ffffff');
+    drawHeartIcon(ctx, cardX + cardW - 50, ctrlY, 22, '#ffffff');
+
+    ctx.restore();
+    return;
+  }
+
+  // =================================================================
+  // TEMPLATE 10: t10_vertical_transparent_glass
+  // =================================================================
+  if (templateId === 't10_vertical_transparent_glass') {
+    const cardW = width * 0.58;
+    const cardH = height * 0.65;
+    const cardX = width * 0.08;
+    const cardY = (height - cardH) / 2;
+
+    ctx.save();
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 32);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.stroke();
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = `700 ${Math.round(width * 0.03)}px sans-serif`;
+    ctx.fillText(data.headerCategory || 'UNDERGROUND BOOM BAP', cardX + 24, cardY + 44);
+
+    const botY = cardY + cardH - 120;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${Math.round(width * 0.044)}px sans-serif`;
+    ctx.fillText(songTitle, cardX + 24, botY);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = `500 ${Math.round(width * 0.034)}px sans-serif`;
+    ctx.fillText(artist, cardX + 24, botY + 34);
+
+    const barX = cardX + 24;
+    const barY = botY + 54;
+    const barW = cardW - 48;
+    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#ffffff', 'rgba(255,255,255,0.2)');
+
+    const ctrlY = barY + 40;
+    const cx = cardX + cardW / 2;
+    drawSkipBackIcon(ctx, cx - 44, ctrlY, 18, '#ffffff');
+    drawPlayIcon(ctx, cx, ctrlY, 22, '#ffffff');
+    drawSkipForwardIcon(ctx, cx + 44, ctrlY, 18, '#ffffff');
+
+    ctx.restore();
+    return;
+  }
+
+  // =================================================================
+  // TEMPLATE 11: t11_retro_polaroid
+  // =================================================================
+  if (templateId === 't11_retro_polaroid') {
+    const cardW = width * 0.82;
+    const cardH = height * 0.62;
+    const cardX = (width - cardW) / 2;
+    const cardY = (height - cardH) / 2;
+
+    ctx.save();
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 28);
+    ctx.fillStyle = data.cardBg || '#a8a29e';
+    ctx.fill();
+
+    const imgW = cardW - 36;
+    const imgH = cardH * 0.58;
+    if (assets.coverImg) {
+      drawClippedImage(ctx, assets.coverImg, cardX + 18, cardY + 18, imgW, imgH, 16);
+    }
+
+    const textY = cardY + imgH + 48;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#1c1917';
+    ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
+    ctx.fillText(songTitle, cardX + 20, textY);
+
+    ctx.fillStyle = '#44403c';
+    ctx.font = `500 ${Math.round(width * 0.036)}px sans-serif`;
+    ctx.fillText(artist, cardX + 20, textY + 36);
+
+    const barX = cardX + 20;
+    const barY = textY + 70;
+    const barW = cardW - 40;
+    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#000000', 'rgba(0,0,0,0.2)');
+
+    const ctrlY = barY + 54;
+    const cx = width / 2;
+    drawShuffleIcon(ctx, cx - 110, ctrlY, 18, '#000000');
+    drawSkipBackIcon(ctx, cx - 55, ctrlY, 20, '#000000');
+    drawCirclePlayButton(ctx, cx, ctrlY, 44, '#000000', '#ffffff');
+    drawSkipForwardIcon(ctx, cx + 55, ctrlY, 20, '#000000');
+    drawRepeatIcon(ctx, cx + 110, ctrlY, 18, '#000000');
+
+    ctx.restore();
+    return;
+  }
+
+  // =================================================================
+  // TEMPLATE 12: t12_vinyl_popout
+  // =================================================================
+  if (templateId === 't12_vinyl_popout') {
+    const cardW = width * 0.78;
+    const cardH = height * 0.48;
+    const cardX = (width - cardW) / 2;
+    const cardY = (height - cardH) / 2;
+
+    ctx.save();
+    const vinylX = cardX + cardW * 0.45;
+    const vinylY = cardY + cardH * 0.4;
+    const vinylR = cardW * 0.42;
+
+    ctx.translate(vinylX, vinylY);
+    ctx.rotate((progressPercent * 360 / 100) * 4 * Math.PI / 180);
+
+    ctx.beginPath(); ctx.arc(0, 0, vinylR, 0, Math.PI * 2);
+    ctx.fillStyle = '#0f172a'; ctx.fill();
+    ctx.lineWidth = 4; ctx.strokeStyle = '#334155'; ctx.stroke();
+
+    ctx.beginPath(); ctx.arc(0, 0, vinylR * 0.3, 0, Math.PI * 2);
+    ctx.fillStyle = glowColor; ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, vinylR * 0.08, 0, Math.PI * 2);
+    ctx.fillStyle = '#000000'; ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 32);
+    ctx.fillStyle = data.sleeveColor || '#581c87';
+    ctx.fill();
+
+    const imgH = cardH * 0.52;
+    if (assets.coverImg) {
+      drawClippedImage(ctx, assets.coverImg, cardX + 20, cardY + 20, cardW - 40, imgH, 20);
+    }
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${Math.round(width * 0.045)}px sans-serif`;
+    ctx.fillText(songTitle, cardX + 24, cardY + imgH + 54);
+
+    ctx.fillStyle = '#e9d5ff';
+    ctx.font = `500 ${Math.round(width * 0.035)}px sans-serif`;
+    ctx.fillText(artist, cardX + 24, cardY + imgH + 90);
+
+    drawProgressBar(ctx, cardX + 24, cardY + cardH - 44, cardW - 48, 8, progressPercent, '#ffffff', 'rgba(255,255,255,0.3)');
+    ctx.restore();
+    return;
+  }
+
+  // =================================================================
+  // TEMPLATE 13: t13_classic_ipod
+  // =================================================================
+  if (templateId === 't13_classic_ipod') {
+    const cardW = width * 0.86;
+    const cardH = height * 0.58;
+    const cardX = (width - cardW) / 2;
+    const cardY = (height - cardH) / 2;
+
+    ctx.save();
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 42);
+    ctx.fillStyle = data.frameColor || '#09090b';
+    ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)'; ctx.stroke();
+
+    const speakerW = 80;
+    drawRoundedRect(ctx, width / 2 - speakerW / 2, cardY + 20, speakerW, 6, 3);
+    ctx.fillStyle = '#27272a'; ctx.fill();
+
+    const artW = cardW - 48;
+    const artH = cardH * 0.52;
+    const artX = cardX + 24;
+    const artY = cardY + 44;
+    if (assets.coverImg) {
+      drawClippedImage(ctx, assets.coverImg, artX, artY, artW, artH, 20);
+    }
+
+    const textY = artY + artH + 48;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
+    ctx.fillText(songTitle, artX, textY);
+
+    ctx.fillStyle = '#a1a1aa';
+    ctx.font = `500 ${Math.round(width * 0.035)}px sans-serif`;
+    ctx.fillText(artist, artX, textY + 36);
+
+    const barX = artX;
+    const barY = textY + 80;
+    const barW = artW;
+    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#ffffff', 'rgba(255,255,255,0.2)');
+    drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 28, Math.round(width * 0.028), '#a1a1aa');
+
+    const ctrlY = barY + 70;
+    const cx = width / 2;
+    drawSkipBackIcon(ctx, cx - 80, ctrlY, 22, '#ffffff');
+    drawPlayIcon(ctx, cx, ctrlY, 26, '#ffffff');
+    drawSkipForwardIcon(ctx, cx + 80, ctrlY, 22, '#ffffff');
+
+    ctx.restore();
+    return;
+  }
+
+  // =================================================================
+  // TEMPLATE 14: t14_ios_lockscreen (iOS Lockscreen Widget)
+  // =================================================================
+  if (templateId === 't14_ios_lockscreen') {
     const cardW = width * 0.86;
     const cardH = height * 0.58;
     const cardX = (width - cardW) / 2;
@@ -232,7 +926,6 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
     ctx.stroke();
 
-    // 1. Cover Artwork Image at TOP of Card (~52% card height)
     const artW = cardW - 48;
     const artH = cardH * 0.52;
     const artX = cardX + 24;
@@ -242,11 +935,9 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
       drawClippedImage(ctx, assets.coverImg, artX, artY, artW, artH, 24);
     } else {
       ctx.fillStyle = '#1e293b';
-      drawRoundedRect(ctx, artX, artY, artW, artH, 24);
-      ctx.fill();
+      drawRoundedRect(ctx, artX, artY, artW, artH, 24); ctx.fill();
     }
 
-    // 2. Song Title (Bold) & Artist (Gray) BELOW Artwork
     const textY = artY + artH + 48;
     ctx.textAlign = 'left';
     ctx.fillStyle = '#ffffff';
@@ -259,14 +950,12 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
 
     drawMoreHorizontalIcon(ctx, artX + artW - 16, textY - 10, 24, '#71717a');
 
-    // 3. Seekbar & Timecode
     const barX = artX;
     const barY = textY + 84;
     const barW = artW;
     drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#a1a1aa', '#27272a');
     drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 30, Math.round(width * 0.028), '#71717a');
 
-    // 4. Centered Playback Controls (|<<  |>  >>|)
     const ctrlY = barY + 80;
     const ctrlCenterX = width / 2;
     drawSkipBackIcon(ctx, ctrlCenterX - 90, ctrlY, 24, '#ffffff');
@@ -277,11 +966,10 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
     return;
   }
 
-  // -----------------------------------------------------------------
-  // 2. iOS LOCKSCREEN CLOCK TEMPLATES (t15, t16, t17)
-  // -----------------------------------------------------------------
-  if (templateId === 't15_ios_lockscreen_spotify' || templateId === 't16_ios_depth_clock' || templateId === 't17_ios_weather_widget') {
-    // iOS Clock Top Header
+  // =================================================================
+  // TEMPLATE 15: t15_ios_lockscreen_spotify
+  // =================================================================
+  if (templateId === 't15_ios_lockscreen_spotify') {
     ctx.save();
     ctx.textAlign = 'center';
     ctx.fillStyle = data.clockColor || '#fed7aa';
@@ -292,7 +980,6 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
     ctx.fillText(data.lockTime || '00:58', width / 2, height * 0.23);
     ctx.restore();
 
-    // Bottom Music Widget Card
     const cardW = width * 0.88;
     const cardH = height * 0.24;
     const cardX = (width - cardW) / 2;
@@ -300,25 +987,78 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
 
     ctx.save();
     drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 36);
-    ctx.fillStyle = 'rgba(18, 18, 24, 0.9)';
+    ctx.fillStyle = 'rgba(34, 28, 24, 0.88)';
     ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-    ctx.stroke();
+    ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)'; ctx.stroke();
 
-    // Artwork on Left
     const artSize = cardH * 0.55;
     const artX = cardX + 28;
     const artY = cardY + 24;
     if (assets.coverImg) {
-      drawClippedImage(ctx, assets.coverImg, artX, artY, artSize, artSize, 18, 1, templateId === 't16_ios_depth_clock');
-    } else {
-      ctx.fillStyle = '#1e293b';
-      drawRoundedRect(ctx, artX, artY, artSize, artSize, 18);
-      ctx.fill();
+      drawClippedImage(ctx, assets.coverImg, artX, artY, artSize, artSize, 18);
     }
 
-    // Song Title & Artist
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${Math.round(width * 0.042)}px sans-serif`;
+    ctx.fillText(songTitle, artX + artSize + 20, artY + artSize * 0.4);
+
+    ctx.fillStyle = '#d1d5db';
+    ctx.font = `500 ${Math.round(width * 0.034)}px sans-serif`;
+    ctx.fillText(artist, artX + artSize + 20, artY + artSize * 0.75);
+
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#1db954';
+    ctx.font = `800 ${Math.round(width * 0.034)}px sans-serif`;
+    ctx.fillText(data.badgeText || 'Spotify', cardX + cardW - 28, artY + artSize * 0.4);
+
+    const barX = cardX + 28;
+    const barY = cardY + cardH * 0.65;
+    const barW = cardW - 56;
+    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#ffffff', 'rgba(255,255,255,0.2)');
+    drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 28, Math.round(width * 0.028), '#d1d5db');
+
+    const botY = cardY + cardH - 32;
+    drawSkipBackIcon(ctx, width / 2 - 60, botY, 20, '#ffffff');
+    drawCirclePlayButton(ctx, width / 2, botY, 40, '#ffffff', '#000000');
+    drawSkipForwardIcon(ctx, width / 2 + 60, botY, 20, '#ffffff');
+
+    ctx.restore();
+    return;
+  }
+
+  // =================================================================
+  // TEMPLATE 16: t16_ios_depth_clock
+  // =================================================================
+  if (templateId === 't16_ios_depth_clock') {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.fillStyle = data.clockColor || '#ffedd5';
+    ctx.font = `600 ${Math.round(width * 0.042)}px sans-serif`;
+    ctx.fillText(data.lockDate || 'Wed 26 Aug', width / 2, height * 0.14);
+
+    ctx.font = `800 ${Math.round(width * 0.18)}px Outfit, sans-serif`;
+    ctx.fillText(data.lockTime || '21:06', width / 2, height * 0.23);
+    ctx.restore();
+
+    const cardW = width * 0.88;
+    const cardH = height * 0.24;
+    const cardX = (width - cardW) / 2;
+    const cardY = height * 0.68;
+
+    ctx.save();
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 36);
+    ctx.fillStyle = 'rgba(18, 18, 20, 0.85)';
+    ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'; ctx.stroke();
+
+    const artSize = cardH * 0.55;
+    const artX = cardX + 28;
+    const artY = cardY + 24;
+    if (assets.coverImg) {
+      drawClippedImage(ctx, assets.coverImg, artX, artY, artSize, artSize, 18, 1, true);
+    }
+
     ctx.textAlign = 'left';
     ctx.fillStyle = '#ffffff';
     ctx.font = `700 ${Math.round(width * 0.042)}px sans-serif`;
@@ -328,220 +1068,101 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
     ctx.font = `500 ${Math.round(width * 0.034)}px sans-serif`;
     ctx.fillText(artist, artX + artSize + 20, artY + artSize * 0.75);
 
-    // Seekbar inside card
     const barX = cardX + 28;
     const barY = cardY + cardH * 0.65;
     const barW = cardW - 56;
-    drawProgressBar(ctx, barX, barY, barW, 8, progressPercent, '#ffffff', 'rgba(255,255,255,0.2)');
+    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#ffffff', 'rgba(255,255,255,0.2)');
     drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 28, Math.round(width * 0.028), '#94a3b8');
 
-    // Visualizer Bars at Bottom of Card
-    drawVisualizerBars(ctx, cardX + 28, cardY + cardH - 32, cardW - 56, 16, progressPercent, glowColor, 28);
-    ctx.restore();
-    return;
-  }
-
-  // -----------------------------------------------------------------
-  // 3. TEMPLATE 12: VINYL POP OUT
-  // -----------------------------------------------------------------
-  if (templateId === 't12_vinyl_popout') {
-    const cardW = width * 0.78;
-    const cardH = height * 0.48;
-    const cardX = (width - cardW) / 2;
-    const cardY = (height - cardH) / 2;
-
-    // Spinning Vinyl LP Record Behind
-    ctx.save();
-    const vinylX = cardX + cardW * 0.45;
-    const vinylY = cardY + cardH * 0.4;
-    const vinylR = cardW * 0.42;
-
-    ctx.translate(vinylX, vinylY);
-    ctx.rotate((progressPercent * 360 / 100) * 4 * Math.PI / 180);
-
-    ctx.beginPath();
-    ctx.arc(0, 0, vinylR, 0, Math.PI * 2);
-    ctx.fillStyle = '#0f172a';
-    ctx.fill();
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = '#334155';
-    ctx.stroke();
-
-    // Center vinyl sticker
-    ctx.beginPath();
-    ctx.arc(0, 0, vinylR * 0.3, 0, Math.PI * 2);
-    ctx.fillStyle = glowColor;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(0, 0, vinylR * 0.08, 0, Math.PI * 2);
-    ctx.fillStyle = '#000000';
-    ctx.fill();
-    ctx.restore();
-
-    // Sleeve Card Container
-    ctx.save();
-    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 32);
-    ctx.fillStyle = data.sleeveColor || '#581c87';
-    ctx.fill();
-
-    // Cover Artwork Image
-    const imgH = cardH * 0.52;
-    if (assets.coverImg) {
-      drawClippedImage(ctx, assets.coverImg, cardX + 20, cardY + 20, cardW - 40, imgH, 20);
-    }
-
-    // Title & Artist
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `700 ${Math.round(width * 0.045)}px sans-serif`;
-    ctx.fillText(songTitle, cardX + 24, cardY + imgH + 54);
-
-    ctx.fillStyle = '#e9d5ff';
-    ctx.font = `500 ${Math.round(width * 0.035)}px sans-serif`;
-    ctx.fillText(artist, cardX + 24, cardY + imgH + 90);
-
-    // Seekbar
-    drawProgressBar(ctx, cardX + 24, cardY + cardH - 40, cardW - 48, 8, progressPercent, '#ffffff', 'rgba(255,255,255,0.3)');
-    ctx.restore();
-    return;
-  }
-
-  // -----------------------------------------------------------------
-  // 4. TEMPLATE 11: POLAROID CARD
-  // -----------------------------------------------------------------
-  if (templateId === 't11_retro_polaroid') {
-    const cardW = width * 0.82;
-    const cardH = height * 0.62;
-    const cardX = (width - cardW) / 2;
-    const cardY = (height - cardH) / 2;
-
-    ctx.save();
-    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 24);
-    ctx.fillStyle = data.cardBg || '#a8a29e';
-    ctx.fill();
-
-    // Polaroid Artwork Photo (~60% card height)
-    const imgW = cardW - 32;
-    const imgH = cardH * 0.58;
-    if (assets.coverImg) {
-      drawClippedImage(ctx, assets.coverImg, cardX + 16, cardY + 16, imgW, imgH, 12);
-    }
-
-    // Title & Artist
-    const textY = cardY + imgH + 48;
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#1c1917';
-    ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
-    ctx.fillText(songTitle, cardX + 18, textY);
-
-    ctx.fillStyle = '#44403c';
-    ctx.font = `500 ${Math.round(width * 0.036)}px sans-serif`;
-    ctx.fillText(artist, cardX + 18, textY + 36);
-
-    // Seekbar
-    const barX = cardX + 18;
-    const barY = textY + 70;
-    const barW = cardW - 36;
-    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#000000', 'rgba(0,0,0,0.2)');
-
-    // Centered Black Play Button
-    const ctrlY = barY + 60;
-    const ctrlCenterX = width / 2;
-    drawSkipBackIcon(ctx, ctrlCenterX - 60, ctrlY, 20, '#000000');
-    drawPlayIcon(ctx, ctrlCenterX, ctrlY, 24, '#000000');
-    drawSkipForwardIcon(ctx, ctrlCenterX + 60, ctrlY, 20, '#000000');
+    const botY = cardY + cardH - 32;
+    drawSkipBackIcon(ctx, width / 2 - 70, botY, 22, '#ffffff');
+    drawPlayIcon(ctx, width / 2, botY, 26, '#ffffff');
+    drawSkipForwardIcon(ctx, width / 2 + 70, botY, 22, '#ffffff');
 
     ctx.restore();
     return;
   }
 
-  // -----------------------------------------------------------------
-  // 5. TEMPLATE 6: ALBUM RUG STREETWEAR
-  // -----------------------------------------------------------------
-  if (templateId === 't6_floor_mat_rug') {
-    const cardW = width * 0.84;
-    const cardH = height * 0.62;
-    const cardX = (width - cardW) / 2;
-    const cardY = (height - cardH) / 2;
-
+  // =================================================================
+  // TEMPLATE 17: t17_ios_weather_widget
+  // =================================================================
+  if (templateId === 't17_ios_weather_widget') {
     ctx.save();
-    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 32);
-    ctx.fillStyle = data.rugColor || '#880808';
-    ctx.fill();
-
-    // Header DAMN.
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#dc2626';
-    ctx.font = `900 ${Math.round(width * 0.09)}px Montserrat, sans-serif`;
-    ctx.fillText(data.albumHeader || 'DAMN.', cardX + 24, cardY + 70);
-
-    // Centered Album Artwork
-    const artSize = cardW * 0.44;
-    const artX = (width - artSize) / 2;
-    const artY = cardY + 95;
-    if (assets.coverImg) {
-      drawClippedImage(ctx, assets.coverImg, artX, artY, artSize, artSize, 16);
-    }
-
-    // Title & Artist
-    const textY = artY + artSize + 44;
     ctx.textAlign = 'center';
+    ctx.fillStyle = data.clockColor || '#38bdf8';
+    ctx.font = `600 ${Math.round(width * 0.038)}px sans-serif`;
+    ctx.fillText(data.lockDate || 'terça-feira, 24 de setembro', width / 2, height * 0.12);
+
+    ctx.font = `800 ${Math.round(width * 0.18)}px Outfit, sans-serif`;
+    ctx.fillText(data.lockTime || '09:14', width / 2, height * 0.22);
+
+    ctx.font = `500 ${Math.round(width * 0.032)}px sans-serif`;
+    ctx.fillText(data.weatherText || '⛅ 18° Nublado Mâx:23° Mín:15°', width / 2, height * 0.27);
+    ctx.restore();
+
+    const cardW = width * 0.88;
+    const cardH = height * 0.24;
+    const cardX = (width - cardW) / 2;
+    const cardY = height * 0.68;
+
+    ctx.save();
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 36);
+    ctx.fillStyle = 'rgba(24, 24, 28, 0.85)';
+    ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'; ctx.stroke();
+
+    const artSize = cardH * 0.55;
+    const artX = cardX + 28;
+    const artY = cardY + 24;
+    if (assets.coverImg) {
+      drawClippedImage(ctx, assets.coverImg, artX, artY, artSize, artSize, 18);
+    }
+
+    ctx.textAlign = 'left';
     ctx.fillStyle = '#ffffff';
-    ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
-    ctx.fillText(songTitle, width / 2, textY);
+    ctx.font = `700 ${Math.round(width * 0.042)}px sans-serif`;
+    ctx.fillText(songTitle, artX + artSize + 20, artY + artSize * 0.4);
 
-    ctx.fillStyle = '#f8fafc';
-    ctx.font = `500 ${Math.round(width * 0.035)}px sans-serif`;
-    ctx.fillText(artist, width / 2, textY + 36);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = `500 ${Math.round(width * 0.034)}px sans-serif`;
+    ctx.fillText(artist, artX + artSize + 20, artY + artSize * 0.75);
 
-    // Seekbar & Controls
-    const barX = cardX + 24;
-    const barY = textY + 70;
-    const barW = cardW - 48;
-    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#ffffff', 'rgba(255,255,255,0.3)');
+    const barX = cardX + 28;
+    const barY = cardY + cardH * 0.65;
+    const barW = cardW - 56;
+    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#ffffff', 'rgba(255,255,255,0.2)');
+    drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 28, Math.round(width * 0.028), '#94a3b8');
 
-    const ctrlY = barY + 60;
-    drawSkipBackIcon(ctx, width / 2 - 70, ctrlY, 20, '#ffffff');
-    drawPlayIcon(ctx, width / 2, ctrlY, 24, '#ffffff');
-    drawSkipForwardIcon(ctx, width / 2 + 70, ctrlY, 20, '#ffffff');
+    const botY = cardY + cardH - 32;
+    drawSkipBackIcon(ctx, width / 2 - 70, botY, 22, '#ffffff');
+    drawPlayIcon(ctx, width / 2, botY, 26, '#ffffff');
+    drawSkipForwardIcon(ctx, width / 2 + 70, botY, 22, '#ffffff');
 
     ctx.restore();
     return;
   }
 
-  // -----------------------------------------------------------------
-  // 6. DEFAULT STANDARD AIRPODS & CYBER CARD (t1, t2, t3, t4, t5, t7, t8, t9, t10)
-  // -----------------------------------------------------------------
+  // =================================================================
+  // DEFAULT FALLBACK FOR ANY OTHER TEMPLATE
+  // =================================================================
   const cardW = width * 0.86;
   const cardH = height * 0.44;
   const cardX = (width - cardW) / 2;
   const cardY = (height - cardH) / 2;
 
   ctx.save();
-  ctx.shadowColor = glowColor;
-  ctx.shadowBlur = 35;
-
   drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 36);
   ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
   ctx.fill();
-  ctx.shadowBlur = 0;
+  ctx.lineWidth = 3; ctx.strokeStyle = glowColor; ctx.stroke();
 
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = glowColor;
-  ctx.stroke();
-
-  // Artwork on Left Side
   const artSize = cardH * 0.44;
   const artX = cardX + 30;
   const artY = cardY + 36;
   if (assets.coverImg) {
-    drawClippedImage(ctx, assets.coverImg, artX, artY, artSize, artSize, 20, 1, templateId === 't5_airpods_monochrome');
-  } else {
-    ctx.fillStyle = '#1e293b';
-    drawRoundedRect(ctx, artX, artY, artSize, artSize, 20);
-    ctx.fill();
+    drawClippedImage(ctx, assets.coverImg, artX, artY, artSize, artSize, 20);
   }
 
-  // Song Title & Artist on Right Side
   ctx.textAlign = 'left';
   ctx.fillStyle = '#ffffff';
   ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
@@ -551,14 +1172,12 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
   ctx.font = `500 ${Math.round(width * 0.036)}px sans-serif`;
   ctx.fillText(artist, artX + artSize + 24, artY + artSize * 0.76);
 
-  // Seekbar
   const barX = cardX + 30;
   const barY = cardY + cardH * 0.64;
   const barW = cardW - 60;
   drawProgressBar(ctx, barX, barY, barW, 8, progressPercent, '#ffffff', 'rgba(255,255,255,0.2)');
   drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 30, Math.round(width * 0.03), '#94a3b8');
 
-  // Animated Visualizer Waveform at Bottom of Card
   drawVisualizerBars(ctx, cardX + 30, cardY + cardH - 44, cardW - 60, 24, progressPercent, glowColor, 28);
   ctx.restore();
 }
