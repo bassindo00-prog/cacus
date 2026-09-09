@@ -260,8 +260,8 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
   }
 
   const glowColor = data.glowColor || '#8b5cf6';
-  const songTitle = data.songTitle ?? '';
-  const artist = data.artist ?? '';
+  const songTitle = (data.songTitle && data.songTitle.trim() !== '') ? data.songTitle : 'Judul Lagu';
+  const artist = (data.artist && data.artist.trim() !== '') ? data.artist : 'Nama Artist';
   const totalSecs = 210; // 3:30
 
   // =================================================================
@@ -281,7 +281,6 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
     ctx.strokeStyle = glowColor;
     ctx.stroke();
 
-    // Top Header: Plus icon, username, MoreHorizontal
     const topY = cardY + 42;
     drawPlusIcon(ctx, cardX + 36, topY, 24, '#ffffff');
     ctx.textAlign = 'center';
@@ -290,7 +289,6 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
     ctx.fillText(data.username || 'galib______786', width / 2, topY + 6);
     drawMoreHorizontalIcon(ctx, cardX + cardW - 36, topY, 24, '#ffffff');
 
-    // Avatar Circle Photo & Artist
     const avtR = cardH * 0.16;
     const avtX = cardX + 48 + avtR;
     const avtY = cardY + cardH * 0.48;
@@ -305,11 +303,10 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
     }
     ctx.restore();
 
-    // Artist name & Followers
     ctx.textAlign = 'left';
     ctx.fillStyle = '#ffffff';
     ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
-    ctx.fillText(artist || songTitle || 'Artist Name', avtX + avtR + 24, avtY - 8);
+    ctx.fillText(artist, avtX + avtR + 24, avtY - 8);
 
     ctx.fillStyle = '#cbd5e1';
     ctx.font = `500 ${Math.round(width * 0.035)}px sans-serif`;
@@ -437,13 +434,11 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
     ctx.strokeStyle = data.glowColor || '#f97316';
     ctx.stroke();
 
-    // 1. Top Caption
     ctx.textAlign = 'left';
     ctx.fillStyle = '#ffedd5';
     ctx.font = `600 ${Math.round(width * 0.038)}px sans-serif`;
     ctx.fillText(data.caption || 'La Misión para la racha, porque es un temazo.', cardX + 30, cardY + 48);
 
-    // 2. Cover Artwork Image (left) + Song Title & Artist (right)
     const artSize = cardH * 0.38;
     const artX = cardX + 30;
     const artY = cardY + 80;
@@ -464,14 +459,12 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
     ctx.font = `500 ${Math.round(width * 0.036)}px sans-serif`;
     ctx.fillText(artist, artX + artSize + 24, artY + artSize * 0.78);
 
-    // 3. Seekbar Timeline & Timecode
     const barX = cardX + 30;
     const barY = artY + artSize + 48;
     const barW = cardW - 60;
     drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#ffffff', 'rgba(255,255,255,0.2)');
     drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 28, Math.round(width * 0.028), '#fdba74');
 
-    // 4. Bottom Controls (|<<  |>  >>|) + Spotify Badge
     const botY = cardY + cardH - 42;
     drawSkipBackIcon(ctx, cardX + 44, botY, 22, '#ffffff');
     drawPlayIcon(ctx, cardX + 100, botY, 26, '#ffffff');
@@ -860,30 +853,39 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
   // TEMPLATE 13: t13_classic_ipod
   // =================================================================
   if (templateId === 't13_classic_ipod') {
-    const cardW = width * 0.86;
-    const cardH = height * 0.58;
+    const cardW = width * 0.82;
+    const cardH = height * 0.54;
     const cardX = (width - cardW) / 2;
     const cardY = (height - cardH) / 2;
 
     ctx.save();
-    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 42);
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 36);
     ctx.fillStyle = data.frameColor || '#09090b';
     ctx.fill();
-    ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)'; ctx.stroke();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.stroke();
 
-    const speakerW = 80;
-    drawRoundedRect(ctx, width / 2 - speakerW / 2, cardY + 20, speakerW, 6, 3);
-    ctx.fillStyle = '#27272a'; ctx.fill();
+    const speakerW = 60;
+    drawRoundedRect(ctx, width / 2 - speakerW / 2, cardY + 16, speakerW, 5, 2.5);
+    ctx.fillStyle = '#27272a';
+    ctx.fill();
 
-    const artW = cardW - 48;
-    const artH = cardH * 0.52;
-    const artX = cardX + 24;
-    const artY = cardY + 44;
+    const padding = 24;
+    const artW = cardW - padding * 2;
+    const artH = Math.min(cardH * 0.46, artW);
+    const artX = cardX + padding;
+    const artY = cardY + 30;
+
     if (assets.coverImg) {
-      drawClippedImage(ctx, assets.coverImg, artX, artY, artW, artH, 20);
+      drawClippedImage(ctx, assets.coverImg, artX, artY, artW, artH, 18);
+    } else {
+      ctx.fillStyle = '#1e293b';
+      drawRoundedRect(ctx, artX, artY, artW, artH, 18);
+      ctx.fill();
     }
 
-    const textY = artY + artH + 48;
+    const textY = artY + artH + 36;
     ctx.textAlign = 'left';
     ctx.fillStyle = '#ffffff';
     ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
@@ -891,54 +893,59 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
 
     ctx.fillStyle = '#a1a1aa';
     ctx.font = `500 ${Math.round(width * 0.035)}px sans-serif`;
-    ctx.fillText(artist, artX, textY + 36);
+    ctx.fillText(artist, artX, textY + 34);
 
     const barX = artX;
-    const barY = textY + 80;
+    const barY = textY + 70;
     const barW = artW;
     drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#ffffff', 'rgba(255,255,255,0.2)');
     drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 28, Math.round(width * 0.028), '#a1a1aa');
 
-    const ctrlY = barY + 70;
+    const ctrlY = barY + 68;
     const cx = width / 2;
-    drawSkipBackIcon(ctx, cx - 80, ctrlY, 22, '#ffffff');
+    drawSkipBackIcon(ctx, cx - 75, ctrlY, 22, '#ffffff');
     drawPlayIcon(ctx, cx, ctrlY, 26, '#ffffff');
-    drawSkipForwardIcon(ctx, cx + 80, ctrlY, 22, '#ffffff');
+    drawSkipForwardIcon(ctx, cx + 75, ctrlY, 22, '#ffffff');
 
     ctx.restore();
     return;
   }
 
   // =================================================================
-  // TEMPLATE 14: t14_ios_lockscreen (iOS Lockscreen Widget)
+  // TEMPLATE 14: t14_ios_lockscreen (iOS Lockscreen Widget - Exact 1:1 Match for Editor)
   // =================================================================
   if (templateId === 't14_ios_lockscreen') {
-    const cardW = width * 0.86;
-    const cardH = height * 0.58;
+    const cardW = width * 0.82;
+    const cardH = height * 0.54;
     const cardX = (width - cardW) / 2;
     const cardY = (height - cardH) / 2;
 
     ctx.save();
-    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 42);
+    // 1. Lockscreen Widget Card Container (Exact match for TemplateRenderer.jsx)
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 36);
     ctx.fillStyle = 'rgba(24, 24, 27, 0.92)';
     ctx.fill();
     ctx.lineWidth = 2;
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
     ctx.stroke();
 
-    const artW = cardW - 48;
-    const artH = cardH * 0.52;
-    const artX = cardX + 24;
-    const artY = cardY + 24;
+    // 2. Cover Artwork Photo (Matches TemplateRenderer.jsx)
+    const padding = 26;
+    const artW = cardW - padding * 2;
+    const artH = Math.min(cardH * 0.46, artW);
+    const artX = cardX + padding;
+    const artY = cardY + padding;
 
     if (assets.coverImg) {
-      drawClippedImage(ctx, assets.coverImg, artX, artY, artW, artH, 24);
+      drawClippedImage(ctx, assets.coverImg, artX, artY, artW, artH, 20);
     } else {
       ctx.fillStyle = '#1e293b';
-      drawRoundedRect(ctx, artX, artY, artW, artH, 24); ctx.fill();
+      drawRoundedRect(ctx, artX, artY, artW, artH, 20);
+      ctx.fill();
     }
 
-    const textY = artY + artH + 48;
+    // 3. Song Title (bold white) & Artist (gray) directly BELOW artwork
+    const textY = artY + artH + 36;
     ctx.textAlign = 'left';
     ctx.fillStyle = '#ffffff';
     ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
@@ -946,21 +953,23 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
 
     ctx.fillStyle = '#a1a1aa';
     ctx.font = `500 ${Math.round(width * 0.035)}px sans-serif`;
-    ctx.fillText(artist, artX, textY + 38);
+    ctx.fillText(artist, artX, textY + 34);
 
-    drawMoreHorizontalIcon(ctx, artX + artW - 16, textY - 10, 24, '#71717a');
+    drawMoreHorizontalIcon(ctx, artX + artW - 16, textY - 10, 22, '#71717a');
 
+    // 4. Seekbar Timeline & Timecode
     const barX = artX;
-    const barY = textY + 84;
+    const barY = textY + 70;
     const barW = artW;
     drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#a1a1aa', '#27272a');
-    drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 30, Math.round(width * 0.028), '#71717a');
+    drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 28, Math.round(width * 0.028), '#71717a');
 
-    const ctrlY = barY + 80;
+    // 5. Centered Controls (|<<  |>  >>|)
+    const ctrlY = barY + 68;
     const ctrlCenterX = width / 2;
-    drawSkipBackIcon(ctx, ctrlCenterX - 90, ctrlY, 24, '#ffffff');
-    drawPlayIcon(ctx, ctrlCenterX, ctrlY, 28, '#ffffff');
-    drawSkipForwardIcon(ctx, ctrlCenterX + 90, ctrlY, 24, '#ffffff');
+    drawSkipBackIcon(ctx, ctrlCenterX - 75, ctrlY, 22, '#ffffff');
+    drawPlayIcon(ctx, ctrlCenterX, ctrlY, 26, '#ffffff');
+    drawSkipForwardIcon(ctx, ctrlCenterX + 75, ctrlY, 22, '#ffffff');
 
     ctx.restore();
     return;
