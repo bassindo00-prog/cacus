@@ -243,7 +243,13 @@ export default function CapCutEditorScreen({
         {/* Multi-Track Layers List */}
         <div className="capcut-tracks-stack">
           {/* Track 1: Foto Sampul */}
-          <div className="capcut-track-row" onClick={() => coverInputRef.current && coverInputRef.current.click()} style={{ cursor: 'pointer' }}>
+          <div className="capcut-track-row" style={{ position: 'relative', cursor: 'pointer' }}>
+            <input 
+              type="file" 
+              accept="image/*" 
+              onChange={handleCoverFileChange} 
+              style={{ position: 'absolute', inset: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer', zIndex: 10 }} 
+            />
             <div className="capcut-track-meta">
               <Eye size={14} color="#94a3b8" />
               <span>Foto sampul</span>
@@ -283,7 +289,13 @@ export default function CapCutEditorScreen({
           </div>
 
           {/* Track 4: Audio Track */}
-          <div className="capcut-track-row" onClick={() => audioInputRef.current && audioInputRef.current.click()} style={{ cursor: 'pointer' }}>
+          <div className="capcut-track-row" style={{ position: 'relative', cursor: 'pointer' }}>
+            <input 
+              type="file" 
+              accept="audio/*, .mp3, .m4a, .wav, .aac, .flac, .ogg, .mp4, .caf" 
+              onChange={handleAudioFileChange} 
+              style={{ position: 'absolute', inset: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer', zIndex: 10 }} 
+            />
             <div className="capcut-track-meta">
               <Eye size={14} color="#94a3b8" />
               <span>Audio</span>
@@ -301,23 +313,27 @@ export default function CapCutEditorScreen({
       <div className="capcut-active-panel">
         {activeBottomTool === 'edit' && (
           <div className="capcut-panel-row">
-            <button 
-              className="capcut-upload-card"
-              onClick={() => coverInputRef.current && coverInputRef.current.click()}
-              type="button"
-            >
+            <label className="capcut-upload-card" style={{ position: 'relative', overflow: 'hidden' }}>
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleCoverFileChange} 
+                style={{ position: 'absolute', inset: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer', zIndex: 5 }} 
+              />
               <Upload size={20} color="#a855f7" />
               <span>Ganti Foto Sampul</span>
-            </button>
+            </label>
 
-            <button 
-              className="capcut-upload-card"
-              onClick={() => bgInputRef.current && bgInputRef.current.click()}
-              type="button"
-            >
+            <label className="capcut-upload-card" style={{ position: 'relative', overflow: 'hidden' }}>
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleBgFileChange} 
+                style={{ position: 'absolute', inset: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer', zIndex: 5 }} 
+              />
               <ImageIcon size={20} color="#38bdf8" />
               <span>Ganti Background</span>
-            </button>
+            </label>
           </div>
         )}
 
@@ -341,14 +357,16 @@ export default function CapCutEditorScreen({
             </div>
 
             <div className="capcut-panel-row">
-              <button 
-                className="capcut-upload-card"
-                onClick={() => audioInputRef.current && audioInputRef.current.click()}
-                type="button"
-              >
+              <label className="capcut-upload-card" style={{ position: 'relative', overflow: 'hidden' }}>
+                <input 
+                  type="file" 
+                  accept="audio/*, .mp3, .m4a, .wav, .aac, .flac, .ogg, .mp4, .caf" 
+                  onChange={handleAudioFileChange} 
+                  style={{ position: 'absolute', inset: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer', zIndex: 5 }} 
+                />
                 <Music size={20} color="#a855f7" />
                 <span>Upload MP3 / M4A / WAV Baru</span>
-              </button>
+              </label>
             </div>
           </div>
         )}
