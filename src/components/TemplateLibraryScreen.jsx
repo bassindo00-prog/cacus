@@ -33,7 +33,12 @@ export default function TemplateLibraryScreen({ onSelectTemplate }) {
       <main className="capcut-grid-container">
         <div className="capcut-grid">
           {filteredTemplates.map(t => (
-            <div key={t.id} className="capcut-card">
+            <div 
+              key={t.id} 
+              className="capcut-card"
+              onClick={() => onSelectTemplate(t)}
+              style={{ cursor: 'pointer' }}
+            >
               {/* Duration Tag Badge Top Right */}
               <div className="capcut-card-duration">
                 {t.durationTag || '0:15'}
@@ -54,7 +59,10 @@ export default function TemplateLibraryScreen({ onSelectTemplate }) {
                 <div className="capcut-card-actions">
                   <button 
                     className="capcut-btn-use"
-                    onClick={() => onSelectTemplate(t)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectTemplate(t);
+                    }}
                   >
                     <span>Gunakan</span>
                     <div className="capcut-arrow-pill">

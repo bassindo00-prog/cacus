@@ -13,7 +13,15 @@ export default function TemplateRenderer({
   onTogglePlay = () => {},
   progress = 30
 }) {
-  const data = { ...template.defaults, ...metadata };
+  if (!template) {
+    return (
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8b5cf6', background: '#090a0f' }}>
+        <span>Pilih Template...</span>
+      </div>
+    );
+  }
+
+  const data = { ...(template.defaults || {}), ...(metadata || {}) };
 
   // Calculate current seek time display string based on progress percentage
   const formatTime = (secs) => {

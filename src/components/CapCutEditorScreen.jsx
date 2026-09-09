@@ -25,6 +25,17 @@ export default function CapCutEditorScreen({
   const [activeBottomTool, setActiveBottomTool] = useState('edit'); // 'edit' | 'audio' | 'teks' | 'gaya' | 'rasio' | 'preset'
   const [audioError, setAudioError] = useState(null);
 
+  if (!selectedTemplate) {
+    return (
+      <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', background: '#090a0f', gap: '16px' }}>
+        <span>Template tidak ditemukan.</span>
+        <button onClick={onBackToLibrary} style={{ padding: '10px 20px', borderRadius: '12px', background: '#a855f7', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: '700' }}>
+          Kembali ke Pilih Template
+        </button>
+      </div>
+    );
+  }
+
   // Utility to format file size in human-readable units
   const formatFileSize = (bytes) => {
     if (!bytes || bytes === 0) return '0 B';
