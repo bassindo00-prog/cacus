@@ -485,29 +485,56 @@ export default function TemplateRenderer({
     // -------------------------------------------------------------
     // TEMPLATE 14: iOS Dark Now Playing Lockscreen (6127691152321352191_121.jpg)
     // -------------------------------------------------------------
+    // -------------------------------------------------------------
+    // TEMPLATE 14: iOS Dark Now Playing Lockscreen (Exact 1:1 Match for User Image)
+    // -------------------------------------------------------------
     case 't14_ios_lockscreen':
       return (
-        <div style={{ position: 'relative', width: '100%', height: '100%', background: '#090a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px', boxSizing: 'border-box', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', width: '100%', height: '100%', background: '#090a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px', boxSizing: 'border-box', overflow: 'hidden' }}>
           {data.bgImage && <img src={data.bgImage} alt="bg" onError={handleImgError} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />}
-          <div style={{ position: 'relative', width: '90%', maxWidth: '290px', maxHeight: '90%', background: 'rgba(24, 24, 27, 0.9)', backdropFilter: 'blur(20px)', borderRadius: '24px', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '12px', color: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '8px', boxSizing: 'border-box', overflow: 'hidden', margin: 'auto' }}>
-            <img src={displayCover} alt="cover" onError={handleImgError} style={{ width: '100%', maxHeight: '55%', borderRadius: '14px', objectFit: 'cover' }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflow: 'hidden' }}>
+          <div style={{ position: 'relative', width: '88%', maxWidth: '290px', background: 'rgba(22, 22, 24, 0.94)', backdropFilter: 'blur(20px)', borderRadius: '28px', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '12px', color: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '6px', boxSizing: 'border-box', overflow: 'hidden', margin: 'auto' }}>
+            {/* Top Cover Photo Slot */}
+            <img src={displayCover} alt="cover" onError={handleImgError} style={{ width: '100%', aspectRatio: '1 / 1', borderRadius: '18px', objectFit: 'cover' }} />
+            
+            {/* Title & Artist Row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflow: 'hidden', marginTop: '2px' }}>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <h4 style={getTitleStyle('0.88rem')}>{displayTitle}</h4>
                 <p style={getArtistStyle('0.7rem', '#a1a1aa')}>{displayArtist}</p>
               </div>
               <MoreHorizontal size={16} color="#71717a" style={{ flexShrink: 0 }} />
             </div>
-            <div>
-              <div style={{ height: '3px', background: '#27272a', borderRadius: '2px' }}><div style={{ width: `${progress}%`, height: '100%', background: '#a1a1aa', borderRadius: '2px' }} /></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', color: '#71717a', marginTop: '2px' }}><span>{currentTimeStr}</span><span>-{durationStr}</span></div>
+
+            {/* Timeline Progress Bar & Timecode */}
+            <div style={{ marginTop: '2px' }}>
+              <div style={{ height: '4px', background: '#3f3f46', borderRadius: '2px' }}><div style={{ width: `${progress}%`, height: '100%', background: '#ffffff', borderRadius: '2px' }} /></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', color: '#a1a1aa', marginTop: '2px' }}><span>{currentTimeStr}</span><span>-{durationStr}</span></div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
-              <SkipBack size={18} fill="#fff" style={{ cursor: 'pointer' }} />
-              <button onClick={onTogglePlay} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}>
-                {isPlaying ? <Pause size={20} fill="#fff" /> : <Play size={20} fill="#fff" />}
+
+            {/* Playback Controls */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '22px', margin: '2px 0' }}>
+              <SkipBack size={20} fill="#fff" style={{ cursor: 'pointer' }} />
+              <button onClick={onTogglePlay} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                {isPlaying ? <Pause size={24} fill="#fff" /> : <Play size={24} fill="#fff" />}
               </button>
-              <SkipForward size={18} fill="#fff" style={{ cursor: 'pointer' }} />
+              <SkipForward size={20} fill="#fff" style={{ cursor: 'pointer' }} />
+            </div>
+
+            {/* Volume Slider Row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 4px' }}>
+              <VolumeX size={12} color="#a1a1aa" />
+              <div style={{ flex: 1, height: '4px', background: '#3f3f46', borderRadius: '2px' }}>
+                <div style={{ width: '65%', height: '100%', background: '#ffffff', borderRadius: '2px' }} />
+              </div>
+              <Volume2 size={12} color="#a1a1aa" />
+            </div>
+
+            {/* Bottom AirPlay (•) iPhone Button Pill */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255, 255, 255, 0.12)', borderRadius: '16px', padding: '3px 12px', fontSize: '0.65rem', fontWeight: '600', color: '#ffffff' }}>
+                <Radio size={12} color="#ffffff" />
+                <span>iPhone</span>
+              </div>
             </div>
           </div>
         </div>

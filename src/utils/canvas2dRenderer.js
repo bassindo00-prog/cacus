@@ -911,41 +911,90 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
     return;
   }
 
+function drawVolumeLowIcon(ctx, x, y, size, color = '#a1a1aa') {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x - size * 0.4, y - size * 0.2);
+  ctx.lineTo(x - size * 0.15, y - size * 0.2);
+  ctx.lineTo(x + size * 0.15, y - size * 0.4);
+  ctx.lineTo(x + size * 0.15, y + size * 0.4);
+  ctx.lineTo(x - size * 0.15, y + size * 0.2);
+  ctx.lineTo(x - size * 0.4, y + size * 0.2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawVolumeHighIcon(ctx, x, y, size, color = '#a1a1aa') {
+  ctx.save();
+  drawVolumeLowIcon(ctx, x, y, size, color);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(x + size * 0.1, y, size * 0.3, -Math.PI * 0.3, Math.PI * 0.3);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x + size * 0.1, y, size * 0.45, -Math.PI * 0.3, Math.PI * 0.3);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawAirPlayIcon(ctx, x, y, size, color = '#ffffff') {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(x, y + size * 0.1, size * 0.35, Math.PI * 1.25, Math.PI * 1.75);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x, y + size * 0.1, size * 0.5, Math.PI * 1.2, Math.PI * 1.8);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x - size * 0.2, y + size * 0.35);
+  ctx.lineTo(x + size * 0.2, y + size * 0.35);
+  ctx.lineTo(x, y + size * 0.05);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
   // =================================================================
-  // TEMPLATE 14: t14_ios_lockscreen (iOS Lockscreen Widget - Exact 1:1 Match for Editor)
+  // TEMPLATE 14: t14_ios_lockscreen (iOS Lockscreen Widget - Exact 1:1 Match for User Image)
   // =================================================================
   if (templateId === 't14_ios_lockscreen') {
-    const cardW = width * 0.82;
-    const cardH = height * 0.54;
+    const cardW = width * 0.84;
+    const cardH = height * 0.65;
     const cardX = (width - cardW) / 2;
     const cardY = (height - cardH) / 2;
 
     ctx.save();
-    // 1. Lockscreen Widget Card Container (Exact match for TemplateRenderer.jsx)
-    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 36);
-    ctx.fillStyle = 'rgba(24, 24, 27, 0.92)';
+    // 1. Lockscreen Widget Card Container
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 44);
+    ctx.fillStyle = 'rgba(22, 22, 24, 0.95)';
     ctx.fill();
     ctx.lineWidth = 2;
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
     ctx.stroke();
 
-    // 2. Cover Artwork Photo (Matches TemplateRenderer.jsx)
-    const padding = 26;
+    // 2. Cover Artwork Photo (Matches User Reference Image)
+    const padding = 24;
     const artW = cardW - padding * 2;
-    const artH = Math.min(cardH * 0.46, artW);
+    const artH = artW; // 1:1 square portrait aspect ratio
     const artX = cardX + padding;
     const artY = cardY + padding;
 
     if (assets.coverImg) {
-      drawClippedImage(ctx, assets.coverImg, artX, artY, artW, artH, 20);
+      drawClippedImage(ctx, assets.coverImg, artX, artY, artW, artH, 28);
     } else {
       ctx.fillStyle = '#1e293b';
-      drawRoundedRect(ctx, artX, artY, artW, artH, 20);
+      drawRoundedRect(ctx, artX, artY, artW, artH, 28);
       ctx.fill();
     }
 
     // 3. Song Title (bold white) & Artist (gray) directly BELOW artwork
-    const textY = artY + artH + 36;
+    const textY = artY + artH + 38;
     ctx.textAlign = 'left';
     ctx.fillStyle = '#ffffff';
     ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
@@ -959,17 +1008,38 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
 
     // 4. Seekbar Timeline & Timecode
     const barX = artX;
-    const barY = textY + 70;
+    const barY = textY + 68;
     const barW = artW;
-    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#a1a1aa', '#27272a');
-    drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 28, Math.round(width * 0.028), '#71717a');
+    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#ffffff', '#3f3f46');
+    drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 28, Math.round(width * 0.028), '#a1a1aa');
 
-    // 5. Centered Controls (|<<  |>  >>|)
+    // 5. Centered Playback Controls (|<<  |>  >>|)
     const ctrlY = barY + 68;
     const ctrlCenterX = width / 2;
-    drawSkipBackIcon(ctx, ctrlCenterX - 75, ctrlY, 22, '#ffffff');
-    drawPlayIcon(ctx, ctrlCenterX, ctrlY, 26, '#ffffff');
-    drawSkipForwardIcon(ctx, ctrlCenterX + 75, ctrlY, 22, '#ffffff');
+    drawSkipBackIcon(ctx, ctrlCenterX - 80, ctrlY, 24, '#ffffff');
+    drawPlayIcon(ctx, ctrlCenterX, ctrlY, 28, '#ffffff');
+    drawSkipForwardIcon(ctx, ctrlCenterX + 80, ctrlY, 24, '#ffffff');
+
+    // 6. Volume Slider Row
+    const volY = ctrlY + 54;
+    drawVolumeLowIcon(ctx, artX + 16, volY, 18, '#a1a1aa');
+    drawProgressBar(ctx, artX + 44, volY - 3, artW - 88, 6, 65, '#ffffff', '#3f3f46');
+    drawVolumeHighIcon(ctx, artX + artW - 16, volY, 18, '#a1a1aa');
+
+    // 7. Bottom AirPlay (•) iPhone Button Pill
+    const pillW = 160;
+    const pillH = 42;
+    const pillX = width / 2 - pillW / 2;
+    const pillY = volY + 36;
+    drawRoundedRect(ctx, pillX, pillY, pillW, pillH, 21);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.fill();
+
+    drawAirPlayIcon(ctx, pillX + 36, pillY + pillH / 2 - 2, 16, '#ffffff');
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `600 ${Math.round(width * 0.03)}px sans-serif`;
+    ctx.fillText('iPhone', pillX + pillW / 2 + 10, pillY + 27);
 
     ctx.restore();
     return;
