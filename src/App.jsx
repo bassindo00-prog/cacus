@@ -38,7 +38,11 @@ export default function App() {
   const handleSelectTemplate = (template) => {
     triggerHaptic('medium');
     setSelectedTemplate(template);
-    setMetadata({ ...template.defaults });
+    setMetadata({ 
+      ...template.defaults,
+      songTitle: '',
+      artist: ''
+    });
     setCustomAspectRatio(template.aspectRatio || '9:16');
     setProgress(0);
     setIsPlaying(false);

@@ -137,8 +137,8 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
   }
 
   const glowColor = data.glowColor || '#8b5cf6';
-  const songTitle = data.songTitle || 'Judul Lagu';
-  const artist = data.artist || 'Nama Artist';
+  const songTitle = data.songTitle ?? '';
+  const artist = data.artist ?? '';
   const totalSecs = 210; // 3:30
 
   // -----------------------------------------------------------------

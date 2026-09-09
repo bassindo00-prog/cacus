@@ -482,7 +482,7 @@ export default function TemplateRenderer({
             <img src={data.coverImage} alt="cover" style={{ width: '100%', maxHeight: '55%', borderRadius: '14px', objectFit: 'cover' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflow: 'hidden' }}>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <h4 style={getTitleStyle('0.88rem')}>{data.songTitle || 'Not Playing'}</h4>
+                <h4 style={getTitleStyle('0.88rem')}>{data.songTitle}</h4>
                 <p style={getArtistStyle('0.7rem', '#a1a1aa')}>{data.artist}</p>
               </div>
               <MoreHorizontal size={16} color="#71717a" style={{ flexShrink: 0 }} />

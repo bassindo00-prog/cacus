@@ -124,7 +124,6 @@ export default function CapCutEditorScreen({
         fileType: `${formatLabel} (${rawType || '.' + ext})`,
         fileSize: formattedSize
       });
-      onUpdateMetadata({ songTitle: songTitle });
     };
 
     try {

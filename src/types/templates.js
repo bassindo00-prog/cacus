@@ -10,12 +10,12 @@ export const TEMPLATES = [
     usedCount: '28 kali digunakan',
     defaults: {
       username: 'galib______786',
-      artist: 'MD galib',
+      artist: '',
       posts: '0',
       followers: '66',
       following: '260',
       noteText: 'Note...',
-      songTitle: 'MABUK CINTA JDM PLAT KT REMIX',
+      songTitle: '',
       coverImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
       bgImage: '/6127691152321352178_121.jpg',
       glowColor: '#8b5cf6',
@@ -32,8 +32,8 @@ export const TEMPLATES = [
     durationTag: '0:06',
     usedCount: '14 kali digunakan',
     defaults: {
-      songTitle: 'He Loves Me',
-      artist: 'Jill Scott',
+      songTitle: '',
+      artist: '',
       duration: '4:46',
       currentTime: '0:31',
       coverImage: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80',
@@ -52,8 +52,8 @@ export const TEMPLATES = [
     durationTag: '0:20',
     usedCount: '42 kali digunakan',
     defaults: {
-      songTitle: 'Committed',
-      artist: 'Rauw Alejandro',
+      songTitle: '',
+      artist: '',
       currentTime: '0:02',
       duration: '3:14',
       coverImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=80',
@@ -73,8 +73,8 @@ export const TEMPLATES = [
     usedCount: '19 kali digunakan',
     defaults: {
       caption: 'La Misión para la racha, porque es un temazo.',
-      songTitle: 'La Misión',
-      artist: 'Miranda León & Jimmy Guzmán',
+      songTitle: '',
+      artist: '',
       currentTime: '1:21',
       duration: '3:17',
       coverImage: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500&auto=format&fit=crop&q=80',
@@ -93,8 +93,8 @@ export const TEMPLATES = [
     durationTag: '0:30',
     usedCount: '53 kali digunakan',
     defaults: {
-      songTitle: 'meddle about',
-      artist: 'Chase Atlantic',
+      songTitle: '',
+      artist: '',
       currentTime: '0:02',
       duration: '3:23',
       coverImage: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80',
@@ -114,8 +114,8 @@ export const TEMPLATES = [
     usedCount: '37 kali digunakan',
     defaults: {
       albumHeader: 'DAMN.',
-      songTitle: 'HUMBLE.',
-      artist: 'Kendrick Lamar',
+      songTitle: '',
+      artist: '',
       currentTime: '0.55',
       duration: '2.57',
       coverImage: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&auto=format&fit=crop&q=80',
@@ -134,8 +134,8 @@ export const TEMPLATES = [
     usedCount: '21 kali digunakan',
     defaults: {
       quoteText: 'A veces querer mucho tampoco es suficiente',
-      songTitle: 'Corazón Frío',
-      artist: 'Jasiel Núñez, DannyLux',
+      songTitle: '',
+      artist: '',
       duration: '4:24',
       currentTime: '0:22',
       coverImage: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80',
@@ -153,8 +153,8 @@ export const TEMPLATES = [
     durationTag: '0:15',
     usedCount: '64 kali digunakan',
     defaults: {
-      songTitle: 'STEP 2 STEP - Sped Up',
-      artist: 'ALEXYS, Sun Eyes',
+      songTitle: '',
+      artist: '',
       playlist: [
         { title: 'JUKEBOX BB', artist: 'BubuJuice' },
         { title: 'Yao Ming', artist: 'E Euanb' },
@@ -174,8 +174,8 @@ export const TEMPLATES = [
     durationTag: '0:25',
     usedCount: '31 kali digunakan',
     defaults: {
-      songTitle: 'Calm your soul',
-      artist: 'Goodeech Design',
+      songTitle: '',
+      artist: '',
       currentTime: '1:10',
       duration: '2:47',
       coverImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
@@ -194,8 +194,10 @@ export const TEMPLATES = [
     usedCount: '48 kali digunakan',
     defaults: {
       headerCategory: 'UNDERGROUND BOOM BAP',
-      currentSong: "Ruff Ryder's Anthem",
-      currentArtist: 'DMX',
+      currentSong: '',
+      currentArtist: '',
+      songTitle: '',
+      artist: '',
       seekTime: '0:42',
       totalTime: '3:34',
       trackList: [
@@ -215,8 +217,8 @@ export const TEMPLATES = [
     durationTag: '0:10',
     usedCount: '26 kali digunakan',
     defaults: {
-      songTitle: "she's so gone",
-      artist: 'naomi scott',
+      songTitle: '',
+      artist: '',
       coverImage: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80',
       bgImage: '/6127691152321352188_121.jpg',
       cardBg: '#a8a29e'
@@ -234,8 +236,8 @@ export const TEMPLATES = [
     defaults: {
       headerLabel: 'Song of the Week',
       footerLabel: '(song requested)',
-      songTitle: 'TEENAGE DREAM',
-      artist: 'Olivia Rodrigo',
+      songTitle: '',
+      artist: '',
       coverImage: 'https://images.unsplash.com/photo-1526478806334-5fd488fcaabc?w=500&auto=format&fit=crop&q=80',
       bgImage: '/6127691152321352189_121.jpg',
       sleeveColor: '#581c87'
@@ -253,6 +255,8 @@ export const TEMPLATES = [
     defaults: {
       currentTime: '0:10',
       duration: '-3:36',
+      songTitle: '',
+      artist: '',
       coverImage: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80',
       bgImage: '/6127691152321352190_121.jpg',
       frameColor: '#09090b'
@@ -268,8 +272,8 @@ export const TEMPLATES = [
     durationTag: '0:15',
     usedCount: '81 kali digunakan',
     defaults: {
-      songTitle: 'MABUK CINTA JDM PLAT KT REMIX',
-      artist: 'Ragil YETE',
+      songTitle: '',
+      artist: '',
       currentTime: '0:00',
       duration: '-0:15',
       deviceBadge: 'iPhone',
@@ -289,8 +293,8 @@ export const TEMPLATES = [
     defaults: {
       lockDate: 'Fri, Feb 20',
       lockTime: '00:58',
-      songTitle: 'Billie Bossa Nova',
-      artist: 'Billie Eilish',
+      songTitle: '',
+      artist: '',
       currentTime: '00:18',
       duration: '03:17',
       clockColor: '#fed7aa',
@@ -310,8 +314,8 @@ export const TEMPLATES = [
     defaults: {
       lockDate: 'Wed 26 Aug',
       lockTime: '21:06',
-      songTitle: 'ocean eyes',
-      artist: 'Billie Eilish',
+      songTitle: '',
+      artist: '',
       currentTime: '1:10',
       duration: '-2:11',
       clockColor: '#ffedd5',
@@ -333,8 +337,8 @@ export const TEMPLATES = [
       lockTime: '09:14',
       weatherText: '18° Nublado Mâx:23° Mín:15°',
       batteryText: '92% iPhone de Joyce',
-      songTitle: 'Die With A Smile',
-      artist: 'Lady Gaga, Bruno Mars',
+      songTitle: '',
+      artist: '',
       currentTime: '1:52',
       duration: '-2:20',
       clockColor: '#38bdf8',
