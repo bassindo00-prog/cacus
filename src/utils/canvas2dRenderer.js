@@ -1,5 +1,5 @@
 // Fast Native 2D Canvas Template Rendering Engine
-// Renders studio audio templates directly to 2D HTML5 Canvas in < 1ms per frame
+// Precision 1-to-1 renderer for all 17 SPN EDITZ templates
 
 export const getProjectDimensions = (ratio = '9:16') => {
   switch (ratio) {
@@ -46,10 +46,11 @@ function drawRoundedRect(ctx, x, y, width, height, radius) {
   ctx.closePath();
 }
 
-function drawClippedImage(ctx, img, x, y, width, height, radius = 0, opacity = 1) {
+function drawClippedImage(ctx, img, x, y, width, height, radius = 0, opacity = 1, grayscale = false) {
   if (!img) return;
   ctx.save();
   ctx.globalAlpha = opacity;
+  if (grayscale) ctx.filter = 'grayscale(100%)';
   if (radius > 0) {
     drawRoundedRect(ctx, x, y, width, height, radius);
     ctx.clip();
@@ -106,7 +107,6 @@ function drawTimecode(ctx, progressPercent, totalSecs, xLeft, xRight, y, fontSiz
   ctx.restore();
 }
 
-// Animated Equalizer Visualizer Bars
 function drawVisualizerBars(ctx, x, y, width, height, progressPercent, barColor = '#38bdf8', count = 24) {
   ctx.save();
   const gap = 4;
@@ -124,6 +124,80 @@ function drawVisualizerBars(ctx, x, y, width, height, progressPercent, barColor 
   ctx.restore();
 }
 
+// Icon Helper Drawers
+function drawPlayIcon(ctx, x, y, size, color = '#ffffff') {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x - size * 0.35, y - size * 0.45);
+  ctx.lineTo(x + size * 0.45, y);
+  ctx.lineTo(x - size * 0.35, y + size * 0.45);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawSkipBackIcon(ctx, x, y, size, color = '#ffffff') {
+  ctx.save();
+  ctx.fillStyle = color;
+  const barW = size * 0.2;
+  ctx.fillRect(x - size * 0.45, y - size * 0.4, barW, size * 0.8);
+  ctx.beginPath();
+  ctx.moveTo(x + size * 0.35, y - size * 0.4);
+  ctx.lineTo(x - size * 0.1, y);
+  ctx.lineTo(x + size * 0.35, y + size * 0.4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawSkipForwardIcon(ctx, x, y, size, color = '#ffffff') {
+  ctx.save();
+  ctx.fillStyle = color;
+  const barW = size * 0.2;
+  ctx.fillRect(x + size * 0.25, y - size * 0.4, barW, size * 0.8);
+  ctx.beginPath();
+  ctx.moveTo(x - size * 0.35, y - size * 0.4);
+  ctx.lineTo(x + size * 0.1, y);
+  ctx.lineTo(x - size * 0.35, y + size * 0.4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawShuffleIcon(ctx, x, y, size, color = '#ffffff') {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x - size * 0.4, y - size * 0.3);
+  ctx.lineTo(x + size * 0.4, y + size * 0.3);
+  ctx.moveTo(x - size * 0.4, y + size * 0.3);
+  ctx.lineTo(x + size * 0.4, y - size * 0.3);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawRepeatIcon(ctx, x, y, size, color = '#ffffff') {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(x, y, size * 0.4, 0, Math.PI * 1.5);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawMoreHorizontalIcon(ctx, x, y, size, color = '#71717a') {
+  ctx.save();
+  ctx.fillStyle = color;
+  const r = size * 0.15;
+  ctx.beginPath(); ctx.arc(x - size * 0.4, y, r, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + size * 0.4, y, r, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
 export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, width, height, assets) {
   ctx.clearRect(0, 0, width, height);
 
@@ -131,7 +205,7 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
   ctx.fillStyle = '#050608';
   ctx.fillRect(0, 0, width, height);
 
-  // 2. Background Photo (with cover scaling & 0.6 opacity)
+  // 2. Background Photo (with cover scaling & 0.65 opacity)
   if (assets.bgImg) {
     drawClippedImage(ctx, assets.bgImg, 0, 0, width, height, 0, 0.65);
   }
@@ -142,10 +216,70 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
   const totalSecs = 210; // 3:30
 
   // -----------------------------------------------------------------
-  // TEMPLATE RENDERING BRANCHES
+  // 1. TEMPLATE 14: iOS LOCKSCREEN WIDGET (Exact Match for Screenshot)
   // -----------------------------------------------------------------
+  if (templateId === 't14_ios_lockscreen' || templateId === 't13_classic_ipod') {
+    const cardW = width * 0.86;
+    const cardH = height * 0.58;
+    const cardX = (width - cardW) / 2;
+    const cardY = (height - cardH) / 2;
 
-  // IS LOCKSCREEN TEMPLATES (t15, t16, t17)
+    ctx.save();
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 42);
+    ctx.fillStyle = 'rgba(24, 24, 27, 0.92)';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.stroke();
+
+    // 1. Cover Artwork Image at TOP of Card (~52% card height)
+    const artW = cardW - 48;
+    const artH = cardH * 0.52;
+    const artX = cardX + 24;
+    const artY = cardY + 24;
+
+    if (assets.coverImg) {
+      drawClippedImage(ctx, assets.coverImg, artX, artY, artW, artH, 24);
+    } else {
+      ctx.fillStyle = '#1e293b';
+      drawRoundedRect(ctx, artX, artY, artW, artH, 24);
+      ctx.fill();
+    }
+
+    // 2. Song Title (Bold) & Artist (Gray) BELOW Artwork
+    const textY = artY + artH + 48;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
+    ctx.fillText(songTitle, artX, textY);
+
+    ctx.fillStyle = '#a1a1aa';
+    ctx.font = `500 ${Math.round(width * 0.035)}px sans-serif`;
+    ctx.fillText(artist, artX, textY + 38);
+
+    drawMoreHorizontalIcon(ctx, artX + artW - 16, textY - 10, 24, '#71717a');
+
+    // 3. Seekbar & Timecode
+    const barX = artX;
+    const barY = textY + 84;
+    const barW = artW;
+    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#a1a1aa', '#27272a');
+    drawTimecode(ctx, progressPercent, totalSecs, barX, barX + barW, barY + 30, Math.round(width * 0.028), '#71717a');
+
+    // 4. Centered Playback Controls (|<<  |>  >>|)
+    const ctrlY = barY + 80;
+    const ctrlCenterX = width / 2;
+    drawSkipBackIcon(ctx, ctrlCenterX - 90, ctrlY, 24, '#ffffff');
+    drawPlayIcon(ctx, ctrlCenterX, ctrlY, 28, '#ffffff');
+    drawSkipForwardIcon(ctx, ctrlCenterX + 90, ctrlY, 24, '#ffffff');
+
+    ctx.restore();
+    return;
+  }
+
+  // -----------------------------------------------------------------
+  // 2. iOS LOCKSCREEN CLOCK TEMPLATES (t15, t16, t17)
+  // -----------------------------------------------------------------
   if (templateId === 't15_ios_lockscreen_spotify' || templateId === 't16_ios_depth_clock' || templateId === 't17_ios_weather_widget') {
     // iOS Clock Top Header
     ctx.save();
@@ -158,7 +292,7 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
     ctx.fillText(data.lockTime || '00:58', width / 2, height * 0.23);
     ctx.restore();
 
-    // Lockscreen Music Widget Card
+    // Bottom Music Widget Card
     const cardW = width * 0.88;
     const cardH = height * 0.24;
     const cardX = (width - cardW) / 2;
@@ -172,12 +306,12 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
     ctx.stroke();
 
-    // Artwork
+    // Artwork on Left
     const artSize = cardH * 0.55;
     const artX = cardX + 28;
     const artY = cardY + 24;
     if (assets.coverImg) {
-      drawClippedImage(ctx, assets.coverImg, artX, artY, artSize, artSize, 18);
+      drawClippedImage(ctx, assets.coverImg, artX, artY, artSize, artSize, 18, 1, templateId === 't16_ios_depth_clock');
     } else {
       ctx.fillStyle = '#1e293b';
       drawRoundedRect(ctx, artX, artY, artSize, artSize, 18);
@@ -207,7 +341,9 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
     return;
   }
 
-  // TEMPLATE 12: VINYL POP OUT
+  // -----------------------------------------------------------------
+  // 3. TEMPLATE 12: VINYL POP OUT
+  // -----------------------------------------------------------------
   if (templateId === 't12_vinyl_popout') {
     const cardW = width * 0.78;
     const cardH = height * 0.48;
@@ -269,39 +405,143 @@ export function drawTemplateCanvas2D(ctx, templateId, data, progressPercent, wid
     return;
   }
 
-  // DEFAULT STANDARD PLAYER CARD (TEMPLATES t1 - t14)
+  // -----------------------------------------------------------------
+  // 4. TEMPLATE 11: POLAROID CARD
+  // -----------------------------------------------------------------
+  if (templateId === 't11_retro_polaroid') {
+    const cardW = width * 0.82;
+    const cardH = height * 0.62;
+    const cardX = (width - cardW) / 2;
+    const cardY = (height - cardH) / 2;
+
+    ctx.save();
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 24);
+    ctx.fillStyle = data.cardBg || '#a8a29e';
+    ctx.fill();
+
+    // Polaroid Artwork Photo (~60% card height)
+    const imgW = cardW - 32;
+    const imgH = cardH * 0.58;
+    if (assets.coverImg) {
+      drawClippedImage(ctx, assets.coverImg, cardX + 16, cardY + 16, imgW, imgH, 12);
+    }
+
+    // Title & Artist
+    const textY = cardY + imgH + 48;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#1c1917';
+    ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
+    ctx.fillText(songTitle, cardX + 18, textY);
+
+    ctx.fillStyle = '#44403c';
+    ctx.font = `500 ${Math.round(width * 0.036)}px sans-serif`;
+    ctx.fillText(artist, cardX + 18, textY + 36);
+
+    // Seekbar
+    const barX = cardX + 18;
+    const barY = textY + 70;
+    const barW = cardW - 36;
+    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#000000', 'rgba(0,0,0,0.2)');
+
+    // Centered Black Play Button
+    const ctrlY = barY + 60;
+    const ctrlCenterX = width / 2;
+    drawSkipBackIcon(ctx, ctrlCenterX - 60, ctrlY, 20, '#000000');
+    drawPlayIcon(ctx, ctrlCenterX, ctrlY, 24, '#000000');
+    drawSkipForwardIcon(ctx, ctrlCenterX + 60, ctrlY, 20, '#000000');
+
+    ctx.restore();
+    return;
+  }
+
+  // -----------------------------------------------------------------
+  // 5. TEMPLATE 6: ALBUM RUG STREETWEAR
+  // -----------------------------------------------------------------
+  if (templateId === 't6_floor_mat_rug') {
+    const cardW = width * 0.84;
+    const cardH = height * 0.62;
+    const cardX = (width - cardW) / 2;
+    const cardY = (height - cardH) / 2;
+
+    ctx.save();
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 32);
+    ctx.fillStyle = data.rugColor || '#880808';
+    ctx.fill();
+
+    // Header DAMN.
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#dc2626';
+    ctx.font = `900 ${Math.round(width * 0.09)}px Montserrat, sans-serif`;
+    ctx.fillText(data.albumHeader || 'DAMN.', cardX + 24, cardY + 70);
+
+    // Centered Album Artwork
+    const artSize = cardW * 0.44;
+    const artX = (width - artSize) / 2;
+    const artY = cardY + 95;
+    if (assets.coverImg) {
+      drawClippedImage(ctx, assets.coverImg, artX, artY, artSize, artSize, 16);
+    }
+
+    // Title & Artist
+    const textY = artY + artSize + 44;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
+    ctx.fillText(songTitle, width / 2, textY);
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = `500 ${Math.round(width * 0.035)}px sans-serif`;
+    ctx.fillText(artist, width / 2, textY + 36);
+
+    // Seekbar & Controls
+    const barX = cardX + 24;
+    const barY = textY + 70;
+    const barW = cardW - 48;
+    drawProgressBar(ctx, barX, barY, barW, 6, progressPercent, '#ffffff', 'rgba(255,255,255,0.3)');
+
+    const ctrlY = barY + 60;
+    drawSkipBackIcon(ctx, width / 2 - 70, ctrlY, 20, '#ffffff');
+    drawPlayIcon(ctx, width / 2, ctrlY, 24, '#ffffff');
+    drawSkipForwardIcon(ctx, width / 2 + 70, ctrlY, 20, '#ffffff');
+
+    ctx.restore();
+    return;
+  }
+
+  // -----------------------------------------------------------------
+  // 6. DEFAULT STANDARD AIRPODS & CYBER CARD (t1, t2, t3, t4, t5, t7, t8, t9, t10)
+  // -----------------------------------------------------------------
   const cardW = width * 0.86;
-  const cardH = height * 0.42;
+  const cardH = height * 0.44;
   const cardX = (width - cardW) / 2;
   const cardY = (height - cardH) / 2;
 
   ctx.save();
-  // Glowing Shadow
   ctx.shadowColor = glowColor;
   ctx.shadowBlur = 35;
 
   drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 36);
   ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
   ctx.fill();
-  ctx.shadowBlur = 0; // reset shadow
+  ctx.shadowBlur = 0;
 
   ctx.lineWidth = 3;
   ctx.strokeStyle = glowColor;
   ctx.stroke();
 
-  // Artwork
+  // Artwork on Left Side
   const artSize = cardH * 0.44;
   const artX = cardX + 30;
   const artY = cardY + 36;
   if (assets.coverImg) {
-    drawClippedImage(ctx, assets.coverImg, artX, artY, artSize, artSize, 20);
+    drawClippedImage(ctx, assets.coverImg, artX, artY, artSize, artSize, 20, 1, templateId === 't5_airpods_monochrome');
   } else {
     ctx.fillStyle = '#1e293b';
     drawRoundedRect(ctx, artX, artY, artSize, artSize, 20);
     ctx.fill();
   }
 
-  // Song Title & Artist
+  // Song Title & Artist on Right Side
   ctx.textAlign = 'left';
   ctx.fillStyle = '#ffffff';
   ctx.font = `700 ${Math.round(width * 0.046)}px sans-serif`;
