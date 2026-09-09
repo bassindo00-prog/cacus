@@ -316,7 +316,11 @@ export default function CapCutEditorScreen({
             </div>
             <div className="capcut-track-content audio-track">
               <div className="capcut-track-clip audio-clip" style={{ width: '100%' }}>
-                <span>🎵 {currentSong.filename || currentSong.title} {currentSong.fileSize ? `(${currentSong.fileSize})` : ''} • Klik ganti</span>
+                {currentSong && (currentSong.filename || currentSong.title) ? (
+                  <span>🎵 {currentSong.filename || currentSong.title} {currentSong.fileSize ? `(${currentSong.fileSize})` : ''} • Klik ganti</span>
+                ) : (
+                  <span>🎵 Belum ada audio (Klik untuk upload)</span>
+                )}
               </div>
             </div>
           </div>
@@ -359,16 +363,27 @@ export default function CapCutEditorScreen({
               </div>
             )}
 
-            <div className="capcut-audio-meta-card">
-              <div className="capcut-audio-meta-header">
-                <span className="capcut-audio-meta-title">🎵 {currentSong.filename || currentSong.title}</span>
+            {currentSong && (currentSong.filename || currentSong.title) ? (
+              <div className="capcut-audio-meta-card">
+                <div className="capcut-audio-meta-header">
+                  <span className="capcut-audio-meta-title">🎵 {currentSong.filename || currentSong.title}</span>
+                </div>
+                <div className="capcut-audio-meta-tags">
+                  <span>Format: {currentSong.fileType || 'Audio'}</span>
+                  <span>•</span>
+                  <span>Ukuran: {currentSong.fileSize || 'Standard'}</span>
+                </div>
               </div>
-              <div className="capcut-audio-meta-tags">
-                <span>Format: {currentSong.fileType || 'Audio'}</span>
-                <span>•</span>
-                <span>Ukuran: {currentSong.fileSize || 'Standard'}</span>
+            ) : (
+              <div className="capcut-audio-meta-card">
+                <div className="capcut-audio-meta-header">
+                  <span className="capcut-audio-meta-title">🎵 Belum ada file audio</span>
+                </div>
+                <div className="capcut-audio-meta-tags">
+                  <span>Silakan upload file MP3 / M4A / WAV dari perangkat Anda</span>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="capcut-panel-row">
               <label className="capcut-upload-card" style={{ position: 'relative', overflow: 'hidden' }}>

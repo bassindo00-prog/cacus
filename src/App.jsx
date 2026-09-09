@@ -11,7 +11,7 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState('library'); // 'library' | 'editor'
   const [selectedTemplate, setSelectedTemplate] = useState(TEMPLATES[0]);
   const [metadata, setMetadata] = useState(TEMPLATES[0].defaults);
-  const [currentSong, setCurrentSong] = useState(DEMO_SONGS[0]);
+  const [currentSong, setCurrentSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(15);
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -43,6 +43,7 @@ export default function App() {
       songTitle: '',
       artist: ''
     });
+    setCurrentSong(null);
     setCustomAspectRatio(template.aspectRatio || '9:16');
     setProgress(0);
     setIsPlaying(false);
@@ -151,7 +152,7 @@ export default function App() {
       {/* Bottom Hidden Audio Engine */}
       <audio 
         ref={audioRef}
-        src={currentSong.url}
+        src={currentSong?.url || ''}
         onEnded={() => setIsPlaying(false)}
       />
 
