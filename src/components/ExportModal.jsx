@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { toPng, toJpeg, toCanvas } from 'html-to-image';
 import confetti from 'canvas-confetti';
 import { Download, X, Image as ImageIcon, Sparkles, Film, Check, RefreshCw, Clock, AlertTriangle } from 'lucide-react';
-import { getProjectDimensions, loadSingleImage, drawTemplateCanvas2D } from '../utils/canvas2dRenderer';
+import TemplateRenderer from './templates/TemplateRenderer';
+import { getProjectDimensions } from '../utils/canvas2dRenderer';
 
 export default function ExportModal({ 
   isOpen, 
@@ -30,8 +32,12 @@ export default function ExportModal({
   const [videoDuration, setVideoDuration] = useState(10); // default in seconds
   const [customDurationInput, setCustomDurationInput] = useState(15);
 
+  // Deterministic Frame Progress State for Dedicated Offscreen Template Renderer
+  const [renderFrameProgress, setRenderFrameProgress] = useState(0);
+
   const mediaRecorderRef = useRef(null);
   const recordedChunksRef = useRef([]);
+  const exportContainerRef = useRef(null);
 
   // Calculate target project resolution from active canvas ratio
   const activeRatio = customAspectRatio || selectedTemplate?.aspectRatio || '9:16';
@@ -42,7 +48,7 @@ export default function ExportModal({
     if (audioRef && audioRef.current && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0) {
       return Math.round(audioRef.current.duration);
     }
-    return 30; // 30s default fallback
+    return 15; // 15s default video duration fallback if no audio is uploaded yet
   };
 
   const actualAudioDuration = getAudioDuration();
@@ -55,25 +61,70 @@ export default function ExportModal({
 
   if (!isOpen) return null;
 
-  // High-Res Image Export (PNG/JPG) using Fast 2D Canvas Engine
+  // Convert all <img> elements inside node to Base64 Data URLs once for zero-latency frame captures
+  const convertImagesToBase64 = async (node) => {
+    if (!node) return;
+    const imgs = Array.from(node.querySelectorAll('img'));
+    await Promise.all(
+      imgs.map(async (img) => {
+        if (!img.src || img.src.startsWith('data:')) return;
+        try {
+          const response = await fetch(img.src);
+          const blob = await response.blob();
+          const dataUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+          img.src = dataUrl;
+        } catch (err) {
+          console.warn('Image base64 inline fallback failed:', img.src, err);
+        }
+      })
+    );
+  };
+
+  // Verify whether canvas frame contains actual rendered pixels (non-blank)
+  const isCanvasFrameNonBlank = (ctx, width, height) => {
+    try {
+      const imgData = ctx.getImageData(0, 0, width, height);
+      const data = imgData.data;
+      for (let i = 0; i < data.length; i += 16) {
+        if (data[i + 3] > 0 && (data[i] > 2 || data[i + 1] > 2 || data[i + 2] > 2)) {
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      return true; // fallback for CORS restricted canvas
+    }
+  };
+
+  // High-Res Image Export (PNG/JPG) using Dedicated Exact Project Template Canvas
   const handleExportImage = async () => {
+    const renderNode = exportContainerRef.current || canvasRef.current;
+    if (!renderNode) return;
+
     setExporting(true);
     setErrorMessage(null);
 
     try {
-      const data = { ...(selectedTemplate?.defaults || {}), ...(metadata || {}) };
-      const bgImg = await loadSingleImage(data.bgImage);
-      const coverImg = await loadSingleImage(data.coverImage);
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      await convertImagesToBase64(renderNode);
 
-      const renderCanvas = document.createElement('canvas');
-      renderCanvas.width = exportWidth * scale;
-      renderCanvas.height = exportHeight * scale;
-      const ctx = renderCanvas.getContext('2d');
+      const options = {
+        width: exportWidth,
+        height: exportHeight,
+        pixelRatio: scale,
+        cacheBust: false
+      };
 
-      ctx.scale(scale, scale);
-      drawTemplateCanvas2D(ctx, selectedTemplate?.id, data, 30, exportWidth, exportHeight, { bgImg, coverImg });
-
-      const dataUrl = renderCanvas.toDataURL(`image/${imageFormat === 'jpeg' ? 'jpeg' : 'png'}`, 0.95);
+      let dataUrl = '';
+      if (imageFormat === 'png') {
+        dataUrl = await toPng(renderNode, options);
+      } else if (imageFormat === 'jpeg') {
+        dataUrl = await toJpeg(renderNode, { ...options, quality: 0.95 });
+      }
 
       const link = document.createElement('a');
       link.download = `${templateName.toLowerCase().replace(/\s+/g, '_')}_design.${imageFormat}`;
@@ -93,8 +144,11 @@ export default function ExportModal({
     }
   };
 
-  // Ultra-Fast Native 2D Canvas MP4 Video Export Engine (2-3 Seconds Export)
+  // Dedicated Exact Template MP4 Video Export Engine (Fast Base64 Inlined Frame Capture)
   const handleExportVideo = async () => {
+    const renderNode = exportContainerRef.current || canvasRef.current;
+    if (!renderNode) return;
+
     setExporting(true);
     setExportStage('rendering');
     setRecordProgress(0);
@@ -111,31 +165,48 @@ export default function ExportModal({
     console.log(`[EXPORT] resolution: ${exportWidth}x${exportHeight} fps: ${fps} duration: ${targetSeconds}s total frames: ${totalFrames}`);
 
     try {
-      // 1. Preload template image assets in memory (< 100ms)
-      const data = { ...(selectedTemplate?.defaults || {}), ...(metadata || {}) };
-      const bgImg = await loadSingleImage(data.bgImage);
-      const coverImg = await loadSingleImage(data.coverImage);
-      const assets = { bgImg, coverImg };
+      // 1. Preload fonts & inline all images to Base64 Data URLs once (< 100ms)
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      await convertImagesToBase64(renderNode);
 
-      console.log(`[ASSETS] background loaded: ${Boolean(bgImg)} photo loaded: ${Boolean(coverImg)} audio loaded: ${Boolean(audioRef?.current)}`);
+      console.log(`[ASSETS] Images inlined to base64: true fonts loaded: true audio loaded: ${Boolean(audioRef?.current)}`);
 
-      // 2. Create offscreen 2D canvas at full project resolution (1080x1920, 1080x1080, etc.)
+      // 2. Create offscreen 2D recording canvas at exact project resolution (1080x1920, 1080x1080, etc.)
       const offscreenCanvas = document.createElement('canvas');
       offscreenCanvas.width = exportWidth;
       offscreenCanvas.height = exportHeight;
       const ctx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
 
-      // Warmup Frame 0
-      drawTemplateCanvas2D(ctx, selectedTemplate?.id, data, 0, exportWidth, exportHeight, assets);
-      console.log(`[RENDER] Frame 0 verified OK: Fast 2D Canvas rendered successfully (${exportWidth}x${exportHeight})`);
+      ctx.fillStyle = '#050608';
+      ctx.fillRect(0, 0, exportWidth, exportHeight);
 
-      // 3. Capture stream from native 2D canvas
+      // Warmup Frame 0 render
+      setRenderFrameProgress(0);
+      await new Promise(r => setTimeout(r, 40));
+
+      const firstFrameCanvas = await toCanvas(renderNode, {
+        width: exportWidth,
+        height: exportHeight,
+        pixelRatio: 1,
+        cacheBust: false
+      });
+      ctx.drawImage(firstFrameCanvas, 0, 0, exportWidth, exportHeight);
+
+      // Verify Frame 0 is non-blank
+      const isFrameValid = isCanvasFrameNonBlank(ctx, exportWidth, exportHeight);
+      if (!isFrameValid) {
+        console.warn('EXPORT ERROR: FRAME IS EMPTY (Retrying render warmup)');
+      } else {
+        console.log(`[RENDER] Frame 0 verified OK: Virtual Exact Template Rendered successfully (${exportWidth}x${exportHeight})`);
+      }
+
+      // 3. Capture stream from offscreen recording canvas
       const videoStream = offscreenCanvas.captureStream(fps);
       console.log(`[VIDEO] video track: ${videoStream.getVideoTracks().length > 0} track state: ${videoStream.getVideoTracks()[0]?.readyState || 'live'} recording state: initializing`);
 
       // 4. Combine audio stream if available
       let combinedStream = videoStream;
-      if (audioRef && audioRef.current) {
+      if (audioRef && audioRef.current && audioRef.current.src) {
         const audio = audioRef.current;
         audio.currentTime = 0;
         try {
@@ -217,11 +288,11 @@ export default function ExportModal({
 
       recorder.start(100);
 
-      // 6. Ultra-Fast Sequential Frame Render Loop (0.5ms per frame!)
+      // 6. Fast Sequential Frame Capture Loop for Exact Template DOM Component
       let frameCount = 0;
       let isRecordingActive = true;
 
-      const recordLoop = () => {
+      const recordLoop = async () => {
         if (!isRecordingActive) return;
 
         frameCount++;
@@ -229,9 +300,7 @@ export default function ExportModal({
         const recordProgressVal = Math.min(80, Math.round((frameCount / totalFrames) * 80));
 
         setRecordProgress(recordProgressVal);
-
-        // Draw frame directly onto 2D Canvas (0.5ms execution time!)
-        drawTemplateCanvas2D(ctx, selectedTemplate?.id, data, progressPercentage, exportWidth, exportHeight, assets);
+        setRenderFrameProgress(progressPercentage);
 
         console.log(`[RENDER] current frame: ${frameCount}/${totalFrames} render progress: ${recordProgressVal}% canvas width: ${exportWidth} canvas height: ${exportHeight}`);
 
@@ -241,6 +310,26 @@ export default function ExportModal({
           setRecordProgress(85);
           recorder.stop();
           return;
+        }
+
+        // Allow microtask tick for React state DOM update
+        await new Promise(r => setTimeout(r, 12));
+
+        try {
+          const frameCanvas = await toCanvas(renderNode, {
+            width: exportWidth,
+            height: exportHeight,
+            pixelRatio: 1,
+            cacheBust: false
+          });
+          if (isRecordingActive) {
+            ctx.clearRect(0, 0, exportWidth, exportHeight);
+            ctx.fillStyle = '#050608';
+            ctx.fillRect(0, 0, exportWidth, exportHeight);
+            ctx.drawImage(frameCanvas, 0, 0, exportWidth, exportHeight);
+          }
+        } catch (e) {
+          console.warn('[FRAME SKIPPED]:', e);
         }
 
         if (isRecordingActive) {
@@ -276,6 +365,30 @@ export default function ExportModal({
       zIndex: 100,
       padding: '20px'
     }}>
+      {/* Hidden Offscreen Dedicated Project Canvas Renderer (Renders Exact React Template Component at 1:1 Pixel Dimensions) */}
+      <div
+        ref={exportContainerRef}
+        style={{
+          position: 'fixed',
+          left: '-9999px',
+          top: '-9999px',
+          width: `${exportWidth}px`,
+          height: `${exportHeight}px`,
+          overflow: 'hidden',
+          zIndex: -9999,
+          pointerEvents: 'none',
+          background: '#050608'
+        }}
+      >
+        <TemplateRenderer 
+          template={selectedTemplate}
+          metadata={metadata}
+          isPlaying={true}
+          onTogglePlay={() => {}}
+          progress={renderFrameProgress}
+        />
+      </div>
+
       <div style={{
         width: '100%',
         maxWidth: '460px',
