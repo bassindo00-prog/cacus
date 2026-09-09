@@ -533,6 +533,48 @@
   cursor: pointer;
 }
 
+.capcut-audio-meta-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  background: rgba(168, 85, 247, 0.12);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+.capcut-audio-meta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.capcut-audio-meta-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #f3e8ff;
+  word-break: break-word;
+}
+
+.capcut-audio-meta-tags {
+  display: flex;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: #c084fc;
+}
+
+.capcut-error-banner {
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 10px;
+  color: #fca5a5;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
 .capcut-panel-inputs {
   display: flex;
   gap: 10px;

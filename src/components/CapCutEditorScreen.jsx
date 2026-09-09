@@ -23,9 +23,16 @@ export default function CapCutEditorScreen({
   onAspectRatioChange
 }) {
   const [activeBottomTool, setActiveBottomTool] = useState('edit'); // 'edit' | 'audio' | 'teks' | 'gaya' | 'rasio' | 'preset'
-  const coverInputRef = useRef(null);
-  const bgInputRef = useRef(null);
-  const audioInputRef = useRef(null);
+  const [audioError, setAudioError] = useState(null);
+
+  // Utility to format file size in human-readable units
+  const formatFileSize = (bytes) => {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   // Convert uploaded image file to Base64 Data URL
   const handleCoverFileChange = (e) => {
@@ -50,16 +57,71 @@ export default function CapCutEditorScreen({
     }
   };
 
+  // iOS-friendly audio file upload handler with extension & MIME fallback
   const handleAudioFileChange = (e) => {
     const file = e.target.files && e.target.files[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
+    if (!file) return;
+
+    // Reset input value so re-selecting same file triggers onChange
+    e.target.value = '';
+
+    const filename = file.name || 'Audio Track';
+    const ext = (filename.split('.').pop() || '').toLowerCase();
+    const rawType = (file.type || '').toLowerCase();
+
+    // Supported audio extensions (common on iOS Files app, iCloud Drive, Downloads)
+    const supportedExts = ['mp3', 'm4a', 'aac', 'wav', 'ogg', 'flac', 'aiff', 'aif', 'caf', 'mp4', 'm4r', '3gp', 'amr', 'wma'];
+    const isAudioMime = rawType.startsWith('audio/') || 
+                        rawType.includes('mp4') || 
+                        rawType.includes('mpeg') || 
+                        rawType.includes('aac') || 
+                        rawType.includes('wav') ||
+                        rawType === 'application/octet-stream';
+
+    const isValidExt = supportedExts.includes(ext);
+    const isGenuinelyUnsupported = !isValidExt && !isAudioMime;
+
+    if (isGenuinelyUnsupported) {
+      setAudioError(`Format file "${filename}" tidak didukung. Gunakan file audio (MP3, M4A, AAC, WAV, FLAC, dll).`);
+      return;
+    }
+
+    // Validate size limit (max 100MB)
+    if (file.size > 100 * 1024 * 1024) {
+      setAudioError(`Ukuran file (${formatFileSize(file.size)}) terlalu besar. Maksimal 100MB.`);
+      return;
+    }
+
+    setAudioError(null);
+
+    const formattedSize = formatFileSize(file.size);
+    const formatLabel = ext ? ext.toUpperCase() : (rawType.split('/')[1] || 'AUDIO').toUpperCase();
+    const songTitle = filename.replace(/\.[^/.]+$/, "");
+
+    // Create object URL with DataURL fallback for iOS WebViews
+    const updateSongState = (audioUrl) => {
       onSelectSong({
         id: 'custom-' + Date.now(),
-        title: file.name.replace(/\.[^/.]+$/, ""),
+        title: songTitle,
         artist: 'Uploaded Audio',
-        url: url
+        url: audioUrl,
+        filename: filename,
+        fileType: `${formatLabel} (${rawType || '.' + ext})`,
+        fileSize: formattedSize
       });
+      onUpdateMetadata({ songTitle: songTitle });
+    };
+
+    try {
+      const objectUrl = URL.createObjectURL(file);
+      updateSongState(objectUrl);
+    } catch (err) {
+      // Fallback for iOS WebViews where object URLs are restricted
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        updateSongState(evt.target.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -97,7 +159,7 @@ export default function CapCutEditorScreen({
       <input 
         ref={audioInputRef}
         type="file" 
-        accept="audio/*" 
+        accept="audio/*,audio/mpeg,audio/mp4,audio/x-m4a,audio/m4a,audio/aac,audio/wav,audio/x-wav,audio/ogg,audio/flac,.mp3,.m4a,.aac,.wav,.ogg,.flac,.aiff,.caf,.mp4,.m4r,.3gp,.amr"
         onChange={handleAudioFileChange} 
         style={{ display: 'none' }} 
       />
@@ -228,7 +290,7 @@ export default function CapCutEditorScreen({
             </div>
             <div className="capcut-track-content audio-track">
               <div className="capcut-track-clip audio-clip" style={{ width: '100%' }}>
-                <span>🎵 {currentSong.title} (Klik untuk upload audio)</span>
+                <span>🎵 {currentSong.filename || currentSong.title} {currentSong.fileSize ? `(${currentSong.fileSize})` : ''} • Klik ganti</span>
               </div>
             </div>
           </div>
@@ -260,15 +322,34 @@ export default function CapCutEditorScreen({
         )}
 
         {activeBottomTool === 'audio' && (
-          <div className="capcut-panel-row">
-            <button 
-              className="capcut-upload-card"
-              onClick={() => audioInputRef.current && audioInputRef.current.click()}
-              type="button"
-            >
-              <Music size={20} color="#a855f7" />
-              <span>Upload MP3 / Audio Baru</span>
-            </button>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {audioError && (
+              <div className="capcut-error-banner">
+                {audioError}
+              </div>
+            )}
+
+            <div className="capcut-audio-meta-card">
+              <div className="capcut-audio-meta-header">
+                <span className="capcut-audio-meta-title">🎵 {currentSong.filename || currentSong.title}</span>
+              </div>
+              <div className="capcut-audio-meta-tags">
+                <span>Format: {currentSong.fileType || 'Audio'}</span>
+                <span>•</span>
+                <span>Ukuran: {currentSong.fileSize || 'Standard'}</span>
+              </div>
+            </div>
+
+            <div className="capcut-panel-row">
+              <button 
+                className="capcut-upload-card"
+                onClick={() => audioInputRef.current && audioInputRef.current.click()}
+                type="button"
+              >
+                <Music size={20} color="#a855f7" />
+                <span>Upload MP3 / M4A / WAV Baru</span>
+              </button>
+            </div>
           </div>
         )}
 
