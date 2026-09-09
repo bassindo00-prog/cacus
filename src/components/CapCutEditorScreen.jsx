@@ -25,6 +25,10 @@ export default function CapCutEditorScreen({
   const [activeBottomTool, setActiveBottomTool] = useState('edit'); // 'edit' | 'audio' | 'teks' | 'gaya' | 'rasio' | 'preset'
   const [audioError, setAudioError] = useState(null);
 
+  const coverInputRef = useRef(null);
+  const bgInputRef = useRef(null);
+  const audioInputRef = useRef(null);
+
   if (!selectedTemplate) {
     return (
       <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', background: '#090a0f', gap: '16px' }}>
