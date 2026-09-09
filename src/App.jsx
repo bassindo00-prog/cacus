@@ -156,7 +156,10 @@ export default function App() {
         isOpen={isExportOpen}
         onClose={() => setIsExportOpen(false)}
         canvasRef={canvasRef}
-        templateName={selectedTemplate.name}
+        selectedTemplate={selectedTemplate}
+        metadata={metadata}
+        customAspectRatio={customAspectRatio}
+        templateName={selectedTemplate?.name || 'template'}
         audioRef={audioRef}
         isPlaying={isPlaying}
         onTogglePlay={setIsPlaying}

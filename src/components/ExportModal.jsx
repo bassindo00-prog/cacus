@@ -2,8 +2,34 @@ import React, { useState, useRef, useEffect } from 'react';
 import { toPng, toJpeg, toSvg, toCanvas } from 'html-to-image';
 import confetti from 'canvas-confetti';
 import { Download, X, Image as ImageIcon, Sparkles, Film, Check, RefreshCw, Clock, AlertTriangle } from 'lucide-react';
+import TemplateRenderer from './templates/TemplateRenderer';
 
-export default function ExportModal({ isOpen, onClose, canvasRef, templateName, audioRef, isPlaying, onTogglePlay }) {
+// Helper to determine exact target project canvas resolution based on ratio
+export const getProjectDimensions = (ratio = '9:16') => {
+  switch (ratio) {
+    case '1:1': return { width: 1080, height: 1080 };
+    case '9:16': return { width: 1080, height: 1920 };
+    case '9:19': return { width: 1080, height: 2280 };
+    case '4:5': return { width: 1080, height: 1350 };
+    case '3:4': return { width: 1080, height: 1440 };
+    case '16:9': return { width: 1920, height: 1080 };
+    case '4:3': return { width: 1440, height: 1080 };
+    default: return { width: 1080, height: 1920 };
+  }
+};
+
+export default function ExportModal({ 
+  isOpen, 
+  onClose, 
+  canvasRef, 
+  selectedTemplate,
+  metadata,
+  customAspectRatio,
+  templateName = 'Template', 
+  audioRef, 
+  isPlaying, 
+  onTogglePlay 
+}) {
   const [exportType, setExportType] = useState('image'); // 'image' | 'video'
   const [exporting, setExporting] = useState(false);
   const [exportStage, setExportStage] = useState('idle'); // 'idle' | 'rendering' | 'encoding' | 'complete' | 'failed'
@@ -19,8 +45,16 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
   const [videoDuration, setVideoDuration] = useState(10); // default in seconds
   const [customDurationInput, setCustomDurationInput] = useState(15);
 
+  // Deterministic Frame Progress State for Dedicated Offscreen Renderer
+  const [renderFrameProgress, setRenderFrameProgress] = useState(0);
+
   const mediaRecorderRef = useRef(null);
   const recordedChunksRef = useRef([]);
+  const exportContainerRef = useRef(null);
+
+  // Calculate target project resolution from active canvas ratio
+  const activeRatio = customAspectRatio || selectedTemplate?.aspectRatio || '9:16';
+  const { width: exportWidth, height: exportHeight } = getProjectDimensions(activeRatio);
 
   // Auto detect actual audio duration when modal opens or audio loads
   const getAudioDuration = () => {
@@ -40,21 +74,25 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
 
   if (!isOpen) return null;
 
-  // Handle HD Image Export (PNG/JPG/SVG)
+  // Handle High-Res Image Export (PNG/JPG/SVG) using Dedicated Project Canvas
   const handleExportImage = async () => {
-    if (!canvasRef.current) return;
+    const node = exportContainerRef.current || canvasRef.current;
+    if (!node) return;
+
     setExporting(true);
     setErrorMessage(null);
 
     try {
-      const node = canvasRef.current;
-      let dataUrl = '';
+      await preloadNodeAssets(node);
 
       const options = {
+        width: exportWidth,
+        height: exportHeight,
         pixelRatio: scale,
         cacheBust: true
       };
 
+      let dataUrl = '';
       if (imageFormat === 'png') {
         dataUrl = await toPng(node, options);
       } else if (imageFormat === 'jpeg') {
@@ -86,6 +124,8 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
     if (document.fonts && document.fonts.ready) {
       await document.fonts.ready;
     }
+
+    if (!node) return;
 
     const imgs = Array.from(node.querySelectorAll('img'));
     let bgLoaded = false;
@@ -128,9 +168,10 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
     }
   };
 
-  // Handle MP4 Video Visualizer Export
+  // Handle MP4 Video Visualizer Export via Dedicated Offscreen Project Renderer
   const handleExportVideo = async () => {
-    if (!canvasRef.current) return;
+    const renderNode = exportContainerRef.current || canvasRef.current;
+    if (!renderNode) return;
 
     setExporting(true);
     setExportStage('rendering');
@@ -145,22 +186,13 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
     const fps = 30;
     const totalFrames = targetSeconds * fps;
 
+    console.log(`[EXPORT] resolution: ${exportWidth}x${exportHeight} fps: ${fps} duration: ${targetSeconds}s total frames: ${totalFrames}`);
+
     try {
-      const node = canvasRef.current;
-      const rect = node.getBoundingClientRect();
-      const width = Math.round(rect.width) || 360;
-      const height = Math.round(rect.height) || 640;
-      const scaleFactor = 1.5; // Crisp HD resolution ratio
+      // Preload images & fonts in dedicated offscreen project renderer
+      await preloadNodeAssets(renderNode);
 
-      const exportWidth = Math.round(width * scaleFactor);
-      const exportHeight = Math.round(height * scaleFactor);
-
-      console.log(`[EXPORT] resolution: ${exportWidth}x${exportHeight} fps: ${fps} duration: ${targetSeconds}s total frames: ${totalFrames}`);
-
-      // Preload images & fonts
-      await preloadNodeAssets(node);
-
-      // Create offscreen export canvas
+      // Create offscreen export canvas for recording
       const offscreenCanvas = document.createElement('canvas');
       offscreenCanvas.width = exportWidth;
       offscreenCanvas.height = exportHeight;
@@ -171,7 +203,15 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
       ctx.fillRect(0, 0, exportWidth, exportHeight);
 
       // Warmup frame 0 render
-      const firstFrameCanvas = await toCanvas(node, { pixelRatio: scaleFactor, cacheBust: true });
+      setRenderFrameProgress(0);
+      await new Promise(r => setTimeout(r, 40));
+
+      const firstFrameCanvas = await toCanvas(renderNode, {
+        width: exportWidth,
+        height: exportHeight,
+        pixelRatio: 1,
+        cacheBust: true
+      });
       ctx.drawImage(firstFrameCanvas, 0, 0, exportWidth, exportHeight);
 
       // Verify Frame 0 is non-blank
@@ -179,10 +219,10 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
       if (!isFrameValid) {
         console.warn('EXPORT ERROR: FRAME IS EMPTY (Retrying render warmup)');
       } else {
-        console.log(`[RENDER] Frame 0 verified OK: Canvas contains visual composition (${exportWidth}x${exportHeight})`);
+        console.log(`[RENDER] Frame 0 verified OK: Virtual Project Canvas rendered successfully (${exportWidth}x${exportHeight})`);
       }
 
-      // Capture stream from canvas
+      // Capture stream from dedicated offscreen canvas
       const videoStream = offscreenCanvas.captureStream(fps);
       console.log(`[VIDEO] video track: ${videoStream.getVideoTracks().length > 0} track state: ${videoStream.getVideoTracks()[0]?.readyState || 'live'} recording state: initializing`);
 
@@ -224,7 +264,7 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
 
       const recorder = new MediaRecorder(combinedStream, {
         mimeType: selectedMime,
-        videoBitsPerSecond: 3000000 // 3 Mbps quality
+        videoBitsPerSecond: 4000000 // High 4 Mbps quality
       });
       mediaRecorderRef.current = recorder;
 
@@ -270,22 +310,23 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
 
       recorder.start(100);
 
-      // Sequential Frame Rendering Loop
-      const startTime = Date.now();
+      // Deterministic Sequential Frame Rendering Loop
       let frameCount = 0;
       let isRecordingActive = true;
 
       const recordLoop = async () => {
         if (!isRecordingActive) return;
 
-        const elapsed = Date.now() - startTime;
-        const currentProgress = Math.min(80, Math.round((elapsed / (targetSeconds * 1000)) * 80));
-        setRecordProgress(currentProgress);
         frameCount++;
+        const progressPercentage = Math.min(100, (frameCount / totalFrames) * 100);
+        const recordProgressVal = Math.min(80, Math.round((frameCount / totalFrames) * 80));
 
-        console.log(`[RENDER] current frame: ${frameCount}/${totalFrames} render progress: ${currentProgress}% canvas width: ${exportWidth} canvas height: ${exportHeight}`);
+        setRecordProgress(recordProgressVal);
+        setRenderFrameProgress(progressPercentage);
 
-        if (elapsed >= targetSeconds * 1000) {
+        console.log(`[RENDER] current frame: ${frameCount}/${totalFrames} render progress: ${recordProgressVal}% canvas width: ${exportWidth} canvas height: ${exportHeight}`);
+
+        if (frameCount >= totalFrames) {
           isRecordingActive = false;
           setExportStage('encoding');
           setRecordProgress(85);
@@ -293,8 +334,16 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
           return;
         }
 
+        // Allow microtask tick for React state DOM update
+        await new Promise(r => setTimeout(r, 15));
+
         try {
-          const frameCanvas = await toCanvas(node, { pixelRatio: scaleFactor, cacheBust: false });
+          const frameCanvas = await toCanvas(renderNode, {
+            width: exportWidth,
+            height: exportHeight,
+            pixelRatio: 1,
+            cacheBust: false
+          });
           if (isRecordingActive) {
             ctx.clearRect(0, 0, exportWidth, exportHeight);
             ctx.fillStyle = '#050608';
@@ -334,10 +383,34 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
       backdropFilter: 'blur(12px)',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'center',
+      justify: 'center',
       zIndex: 100,
       padding: '20px'
     }}>
+      {/* Hidden Offscreen Dedicated Project Canvas Renderer (Fixed 1:1 Pixel Dimensions) */}
+      <div
+        ref={exportContainerRef}
+        style={{
+          position: 'fixed',
+          left: '-9999px',
+          top: '-9999px',
+          width: `${exportWidth}px`,
+          height: `${exportHeight}px`,
+          overflow: 'hidden',
+          zIndex: -9999,
+          pointerEvents: 'none',
+          background: '#050608'
+        }}
+      >
+        <TemplateRenderer 
+          template={selectedTemplate}
+          metadata={metadata}
+          isPlaying={true}
+          onTogglePlay={() => {}}
+          progress={renderFrameProgress}
+        />
+      </div>
+
       <div style={{
         width: '100%',
         maxWidth: '460px',
@@ -355,7 +428,7 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem', fontWeight: '800' }}>
             <Sparkles size={20} color="#38bdf8" />
-            <span>Export Studio Creation</span>
+            <span>Export Studio Creation ({activeRatio})</span>
           </div>
           <button onClick={onClose} disabled={exporting} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
             <X size={20} />
@@ -500,7 +573,7 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
               ) : (
                 <>
                   <Download size={18} />
-                  <span>Download High-Res {imageFormat.toUpperCase()}</span>
+                  <span>Download High-Res {imageFormat.toUpperCase()} ({exportWidth}x{exportHeight})</span>
                 </>
               )}
             </button>
@@ -513,7 +586,7 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
             <div className="form-group">
               <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Clock size={14} color="#ec4899" />
-                <span>Video MP4 Duration Settings</span>
+                <span>Video MP4 Duration Settings ({exportWidth}x{exportHeight})</span>
               </label>
 
               {/* Automatic Song Duration Button */}
