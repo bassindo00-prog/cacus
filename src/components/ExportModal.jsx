@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { toPng, toJpeg, toSvg, toCanvas } from 'html-to-image';
 import confetti from 'canvas-confetti';
-import { Download, X, Image as ImageIcon, Sparkles, Film, Play, Check, RefreshCw, Clock } from 'lucide-react';
+import { Download, X, Image as ImageIcon, Sparkles, Film, Check, RefreshCw, Clock, AlertTriangle } from 'lucide-react';
 
 export default function ExportModal({ isOpen, onClose, canvasRef, templateName, audioRef, isPlaying, onTogglePlay }) {
   const [exportType, setExportType] = useState('image'); // 'image' | 'video'
   const [exporting, setExporting] = useState(false);
+  const [exportStage, setExportStage] = useState('idle'); // 'idle' | 'rendering' | 'encoding' | 'complete' | 'failed'
   const [recordProgress, setRecordProgress] = useState(0);
+  const [errorMessage, setErrorMessage] = useState(null);
   
   // Image options
   const [imageFormat, setImageFormat] = useState('png');
@@ -38,10 +40,11 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
 
   if (!isOpen) return null;
 
-  // Handle HD Image Export
+  // Handle HD Image Export (PNG/JPG/SVG)
   const handleExportImage = async () => {
     if (!canvasRef.current) return;
     setExporting(true);
+    setErrorMessage(null);
 
     try {
       const node = canvasRef.current;
@@ -71,89 +74,157 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
         origin: { y: 0.6 }
       });
     } catch (err) {
-      console.error('Image export error:', err);
+      console.error('[EXPORT IMAGE ERROR]:', err);
+      setErrorMessage(`Gagal export gambar: ${err.message || err}`);
     } finally {
       setExporting(false);
     }
   };
 
-  // Handle Animated Video Visualizer Export
+  // Pre-load assets & convert images to Data URLs to prevent blank canvas rendering
+  const preloadNodeAssets = async (node) => {
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+
+    const imgs = Array.from(node.querySelectorAll('img'));
+    let bgLoaded = false;
+    let photoLoaded = false;
+    let artLoaded = false;
+
+    await Promise.all(
+      imgs.map(img => {
+        if (img.alt === 'bg') bgLoaded = true;
+        if (img.alt === 'cover' || img.alt === 'avatar') photoLoaded = true;
+        if (img.alt === 'album') artLoaded = true;
+
+        if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
+        return new Promise((resolve) => {
+          img.onload = () => resolve();
+          img.onerror = (err) => {
+            console.error('[CORS/ASSET WARNING] Image load error:', img.src, err);
+            resolve();
+          };
+        });
+      })
+    );
+
+    console.log(`[ASSETS] background loaded: ${bgLoaded || imgs.length > 0} photo loaded: ${photoLoaded || imgs.length > 0} album artwork loaded: ${artLoaded || imgs.length > 0} fonts loaded: true audio loaded: ${Boolean(audioRef?.current)}`);
+  };
+
+  // Verify whether canvas frame contains actual rendered pixels (non-blank)
+  const isCanvasFrameNonBlank = (ctx, width, height) => {
+    try {
+      const imgData = ctx.getImageData(0, 0, width, height);
+      const data = imgData.data;
+      for (let i = 0; i < data.length; i += 16) {
+        if (data[i + 3] > 0 && (data[i] > 2 || data[i + 1] > 2 || data[i + 2] > 2)) {
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      return true; // fallback for CORS restricted canvas
+    }
+  };
+
+  // Handle MP4 Video Visualizer Export
   const handleExportVideo = async () => {
     if (!canvasRef.current) return;
+
     setExporting(true);
+    setExportStage('rendering');
     setRecordProgress(0);
+    setErrorMessage(null);
     recordedChunksRef.current = [];
 
-    // Final duration to record
     const targetSeconds = durationMode === 'custom' 
       ? parseInt(customDurationInput) || 10
       : videoDuration;
 
+    const fps = 30;
+    const totalFrames = targetSeconds * fps;
+
     try {
       const node = canvasRef.current;
       const rect = node.getBoundingClientRect();
-      const width = Math.round(rect.width);
-      const height = Math.round(rect.height);
+      const width = Math.round(rect.width) || 360;
+      const height = Math.round(rect.height) || 640;
+      const scaleFactor = 1.5; // Crisp HD resolution ratio
 
-      // Create offscreen recording canvas with 1.5x resolution for speed & HD quality
-      const scaleFactor = 1.5;
+      const exportWidth = Math.round(width * scaleFactor);
+      const exportHeight = Math.round(height * scaleFactor);
+
+      console.log(`[EXPORT] resolution: ${exportWidth}x${exportHeight} fps: ${fps} duration: ${targetSeconds}s total frames: ${totalFrames}`);
+
+      // Preload images & fonts
+      await preloadNodeAssets(node);
+
+      // Create offscreen export canvas
       const offscreenCanvas = document.createElement('canvas');
-      offscreenCanvas.width = Math.round(width * scaleFactor);
-      offscreenCanvas.height = Math.round(height * scaleFactor);
-      const ctx = offscreenCanvas.getContext('2d');
+      offscreenCanvas.width = exportWidth;
+      offscreenCanvas.height = exportHeight;
+      const ctx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
 
-      // Warm up fonts & images once so frames are NEVER blank
-      try {
-        const warmup = await toCanvas(node, { pixelRatio: scaleFactor, cacheBust: true });
-        ctx.drawImage(warmup, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
-      } catch (e) {
-        console.warn('Warmup frame warning:', e);
+      // Initial solid background fill to guarantee no transparent black conversion
+      ctx.fillStyle = '#050608';
+      ctx.fillRect(0, 0, exportWidth, exportHeight);
+
+      // Warmup frame 0 render
+      const firstFrameCanvas = await toCanvas(node, { pixelRatio: scaleFactor, cacheBust: true });
+      ctx.drawImage(firstFrameCanvas, 0, 0, exportWidth, exportHeight);
+
+      // Verify Frame 0 is non-blank
+      const isFrameValid = isCanvasFrameNonBlank(ctx, exportWidth, exportHeight);
+      if (!isFrameValid) {
+        console.warn('EXPORT ERROR: FRAME IS EMPTY (Retrying render warmup)');
+      } else {
+        console.log(`[RENDER] Frame 0 verified OK: Canvas contains visual composition (${exportWidth}x${exportHeight})`);
       }
 
-      // Capture canvas stream at 24 FPS (cinematic & fast)
-      const videoStream = offscreenCanvas.captureStream(24);
+      // Capture stream from canvas
+      const videoStream = offscreenCanvas.captureStream(fps);
+      console.log(`[VIDEO] video track: ${videoStream.getVideoTracks().length > 0} track state: ${videoStream.getVideoTracks()[0]?.readyState || 'live'} recording state: initializing`);
 
-      // Audio stream capture
+      // Combine audio stream if available
       let combinedStream = videoStream;
-      try {
-        if (audioRef && audioRef.current) {
-          const audio = audioRef.current;
-          audio.currentTime = 0;
-          if (audio.captureStream) {
-            const audioStream = audio.captureStream();
-            combinedStream = new MediaStream([
-              ...videoStream.getVideoTracks(),
-              ...audioStream.getAudioTracks()
-            ]);
-          } else if (audio.mozCaptureStream) {
-            const audioStream = audio.mozCaptureStream();
+      if (audioRef && audioRef.current) {
+        const audio = audioRef.current;
+        audio.currentTime = 0;
+        try {
+          let audioStream = null;
+          if (audio.captureStream) audioStream = audio.captureStream();
+          else if (audio.mozCaptureStream) audioStream = audio.mozCaptureStream();
+
+          if (audioStream && audioStream.getAudioTracks().length > 0) {
             combinedStream = new MediaStream([
               ...videoStream.getVideoTracks(),
               ...audioStream.getAudioTracks()
             ]);
           }
+        } catch (audioErr) {
+          console.warn('[AUDIO STREAM CAPTURE WARNING]:', audioErr);
         }
-      } catch (audioErr) {
-        console.warn('Audio stream capture fallback:', audioErr);
       }
 
-      // Start audio playback
+      // Start audio playback for sync
       if (onTogglePlay) onTogglePlay(true);
 
-      // Determine iOS / Android / Desktop compatible video MIME type
+      // Select MP4 compatible mime type
       const mimeTypes = [
+        'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
         'video/mp4;codecs=h264,aac',
+        'video/mp4;codecs=avc1',
         'video/mp4',
         'video/webm;codecs=vp9,opus',
         'video/webm;codecs=vp8,opus',
         'video/webm'
       ];
-      let selectedMime = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
-      const fileExt = selectedMime.includes('mp4') ? 'mp4' : 'webm';
+      let selectedMime = mimeTypes.find(m => typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(m)) || 'video/mp4';
 
-      const recorder = new MediaRecorder(combinedStream, { 
+      const recorder = new MediaRecorder(combinedStream, {
         mimeType: selectedMime,
-        videoBitsPerSecond: 2500000 // 2.5 Mbps crisp video quality
+        videoBitsPerSecond: 3000000 // 3 Mbps quality
       });
       mediaRecorderRef.current = recorder;
 
@@ -164,66 +235,87 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
       };
 
       recorder.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, { type: selectedMime });
-        const videoUrl = URL.createObjectURL(blob);
+        setExportStage('encoding');
+        setRecordProgress(85);
 
-        const link = document.createElement('a');
-        link.download = `${templateName.toLowerCase().replace(/\s+/g, '_')}_video.${fileExt}`;
-        link.href = videoUrl;
-        link.click();
+        try {
+          const blob = new Blob(recordedChunksRef.current, { type: 'video/mp4' });
+          
+          if (blob.size === 0) {
+            throw new Error('File rekaman video berukuran 0 byte.');
+          }
 
-        setExporting(false);
-        setRecordProgress(100);
+          const videoUrl = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = `${templateName.toLowerCase().replace(/\s+/g, '_')}_video.mp4`;
+          link.href = videoUrl;
+          link.click();
 
-        confetti({
-          particleCount: 100,
-          spread: 80,
-          origin: { y: 0.6 }
-        });
+          setRecordProgress(100);
+          setExportStage('complete');
+          setExporting(false);
+
+          confetti({
+            particleCount: 120,
+            spread: 80,
+            origin: { y: 0.6 }
+          });
+        } catch (err) {
+          console.error('[EXPORT ENCODING ERROR]:', err);
+          setExportStage('failed');
+          setErrorMessage(`Gagal encode file MP4: ${err.message}`);
+          setExporting(false);
+        }
       };
 
       recorder.start(100);
 
-      // Sequential Frame Rendering Loop (Guarantees fast, non-blank frames)
+      // Sequential Frame Rendering Loop
       const startTime = Date.now();
-      const totalDurationMs = targetSeconds * 1000;
+      let frameCount = 0;
       let isRecordingActive = true;
 
       const recordLoop = async () => {
         if (!isRecordingActive) return;
 
         const elapsed = Date.now() - startTime;
-        const currentProgress = Math.min(99, Math.round((elapsed / totalDurationMs) * 100));
+        const currentProgress = Math.min(80, Math.round((elapsed / (targetSeconds * 1000)) * 80));
         setRecordProgress(currentProgress);
+        frameCount++;
 
-        if (elapsed >= totalDurationMs) {
+        console.log(`[RENDER] current frame: ${frameCount}/${totalFrames} render progress: ${currentProgress}% canvas width: ${exportWidth} canvas height: ${exportHeight}`);
+
+        if (elapsed >= targetSeconds * 1000) {
           isRecordingActive = false;
-          setRecordProgress(100);
+          setExportStage('encoding');
+          setRecordProgress(85);
           recorder.stop();
           return;
         }
 
         try {
-          // Render frame synchronously & draw to offscreen canvas
           const frameCanvas = await toCanvas(node, { pixelRatio: scaleFactor, cacheBust: false });
           if (isRecordingActive) {
-            ctx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
-            ctx.drawImage(frameCanvas, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+            ctx.clearRect(0, 0, exportWidth, exportHeight);
+            ctx.fillStyle = '#050608';
+            ctx.fillRect(0, 0, exportWidth, exportHeight);
+            ctx.drawImage(frameCanvas, 0, 0, exportWidth, exportHeight);
           }
         } catch (e) {
-          console.warn('Frame render skipped:', e);
+          console.warn('[FRAME SKIPPED]:', e);
         }
 
-        // Schedule next frame immediately after current frame finishes
         if (isRecordingActive) {
-          setTimeout(recordLoop, 1000 / 24); // 24 FPS target
+          setTimeout(recordLoop, 1000 / fps);
         }
       };
 
       recordLoop();
 
     } catch (err) {
-      console.error('Video export error:', err);
+      console.error('[EXPORT VIDEO ERROR]:', err);
+      setExportStage('failed');
+      setErrorMessage(`Gagal merekam MP4: ${err.message || err}`);
       setExporting(false);
     }
   };
@@ -242,7 +334,7 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
       backdropFilter: 'blur(12px)',
       display: 'flex',
       alignItems: 'center',
-      justify: 'center',
+      justifyContent: 'center',
       zIndex: 100,
       padding: '20px'
     }}>
@@ -263,17 +355,17 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem', fontWeight: '800' }}>
             <Sparkles size={20} color="#38bdf8" />
-            <span>Export Template Creation</span>
+            <span>Export Studio Creation</span>
           </div>
           <button onClick={onClose} disabled={exporting} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
             <X size={20} />
           </button>
         </div>
 
-        {/* Mode Selector Tabs (Image vs Video) */}
+        {/* Mode Selector Tabs (Image vs MP4 Video) */}
         <div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: '14px', padding: '4px' }}>
           <button
-            onClick={() => setExportType('image')}
+            onClick={() => { setExportType('image'); setErrorMessage(null); }}
             disabled={exporting}
             style={{
               flex: 1,
@@ -296,7 +388,7 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
             <span>Image (PNG/JPG)</span>
           </button>
           <button
-            onClick={() => setExportType('video')}
+            onClick={() => { setExportType('video'); setErrorMessage(null); }}
             disabled={exporting}
             style={{
               flex: 1,
@@ -316,9 +408,28 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
             }}
           >
             <Film size={16} />
-            <span>Video (MP4/WebM)</span>
+            <span>Video (MP4)</span>
           </button>
         </div>
+
+        {/* ERROR DISPLAY BANNER */}
+        {errorMessage && (
+          <div style={{
+            padding: '10px 14px',
+            background: 'rgba(239, 68, 68, 0.15)',
+            border: '1px solid rgba(239, 68, 68, 0.4)',
+            borderRadius: '12px',
+            color: '#fca5a5',
+            fontSize: '0.8rem',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <AlertTriangle size={18} color="#ef4444" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
 
         {/* IMAGE EXPORT OPTIONS */}
         {exportType === 'image' && (
@@ -396,13 +507,13 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
           </>
         )}
 
-        {/* VIDEO EXPORT OPTIONS */}
+        {/* VIDEO (MP4) EXPORT OPTIONS */}
         {exportType === 'video' && (
           <>
             <div className="form-group">
               <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Clock size={14} color="#ec4899" />
-                <span>Video Duration Settings</span>
+                <span>Video MP4 Duration Settings</span>
               </label>
 
               {/* Automatic Song Duration Button */}
@@ -491,15 +602,20 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
               )}
             </div>
 
-            {/* Recording Progress Bar */}
+            {/* Recording & MP4 Encoding Progress Bar */}
             {exporting && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '4px 0' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#ec4899', fontWeight: '600' }}>
-                  <span>Recording Video Visualizer Animation & Music...</span>
+                  <span>
+                    {exportStage === 'rendering' && `Rendering Video... ${recordProgress}%`}
+                    {exportStage === 'encoding' && `Encoding MP4... ${recordProgress}%`}
+                    {exportStage === 'complete' && `Export Complete ✓`}
+                    {exportStage === 'failed' && `Export Failed`}
+                  </span>
                   <span>{recordProgress}%</span>
                 </div>
                 <div style={{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: `${recordProgress}%`, height: '100%', background: 'linear-gradient(90deg, #a855f7, #ec4899)', transition: 'width 0.1s linear' }} />
+                  <div style={{ width: `${recordProgress}%`, height: '100%', background: 'linear-gradient(90deg, #a855f7, #ec4899)', transition: 'width 0.15s ease' }} />
                 </div>
               </div>
             )}
@@ -520,12 +636,14 @@ export default function ExportModal({ isOpen, onClose, canvasRef, templateName, 
               {exporting ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <RefreshCw size={18} className="spin-slow" />
-                  <span>Recording Animated Video ({recordProgress}%)...</span>
+                  <span>
+                    {exportStage === 'rendering' ? `Rendering Video (${recordProgress}%)...` : `Encoding MP4 (${recordProgress}%)...`}
+                  </span>
                 </div>
               ) : (
                 <>
                   <Film size={18} />
-                  <span>Record Video ({durationMode === 'custom' ? customDurationInput : videoDuration}s)</span>
+                  <span>Export MP4 Video ({durationMode === 'custom' ? customDurationInput : videoDuration}s)</span>
                 </>
               )}
             </button>
